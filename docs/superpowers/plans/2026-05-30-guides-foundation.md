@@ -2,33 +2,31 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Stand up the pnpm monorepo and the `@guides/lexicons` foundation package — lexicon definitions (custom + vendored community), runtime validation, record types, and UTF-8-correct facet helpers — that every other app in the spike depends on.
+**Goal:** Stand up the pnpm monorepo and the `@guides/lexicons` foundation package — lexicon definitions (custom + vendored community), **code-generated** TypeScript types + validators, and UTF-8-correct facet helpers — that every other app in the spike depends on.
 
-**Architecture:** A single shared package holds the data-model truth: lexicon JSON loaded into an `@atproto/lexicon` `Lexicons` instance for runtime validation, hand-authored TypeScript record types for ergonomics, and pure helper functions for building/reading byte-ranged facets. No app code yet; this package is consumed by Plans 2–4.
+**Architecture:** A single shared package holds the data-model truth. Lexicon JSON (our custom `town.roundabout.guide.*` plus vendored community/`com.atproto` schemas) is the source; `@atproto/lex-cli` generates typed record interfaces, `validateRecord`/`isRecord` validators, and a runtime `Lexicons` instance (`lexicons` + `ids`). Pure helper functions build/read byte-ranged facets. No app code yet; this package is consumed by Plans 2–4.
 
-**Tech Stack:** pnpm workspaces, TypeScript (ESM, `moduleResolution: bundler`), Vitest, `@atproto/lexicon`.
+**Tech Stack:** pnpm workspaces, TypeScript (ESM, `moduleResolution: bundler`), Vitest, `@atproto/lex-cli` (codegen, bin `lex`), `@atproto/lexicon` (runtime).
 
-> **Deviation from spec (§11):** The spec mentioned generating types via `@atproto/lex-cli`. This plan uses **runtime `Lexicons` validation + concise hand-authored TS types** instead, because it is more legible for the new-to-atproto reader and avoids a codegen toolchain in a spike. Validation correctness still comes from the canonical lexicon JSON. Flagged for reviewer; revert to codegen if preferred.
+> **Toolchain note:** We use **`@atproto/lex-cli`** (`lex gen-api`), not the newer `@atproto/lex`/`ts-lex`. The newer tool is oriented toward network-*installed*, published lexicons (manifest + CIDs) and currently does not support purely-local lexicons ([atproto#4472](https://github.com/bluesky-social/atproto/issues/4472)). Our `town.roundabout.guide.*` lexicons are deliberately local/unpublished for this spike, so `lex-cli` — which generates directly from local JSON files — is the correct, still-real-world choice. Generated code is committed (standard atproto practice).
 
 ---
 
 ## File Structure
 
 - `pnpm-workspace.yaml` — workspace globs.
-- `package.json` (root) — private root, shared dev scripts.
+- `package.json` (root) — private root, shared test script.
 - `tsconfig.base.json` (root) — shared compiler options.
-- `packages/lexicons/package.json` — the foundation package manifest.
+- `packages/lexicons/package.json` — manifest + codegen script.
 - `packages/lexicons/tsconfig.json` — extends base.
 - `packages/lexicons/lexicons/com/atproto/repo/strongRef.json` — vendored.
 - `packages/lexicons/lexicons/community/lexicon/location/{address,geo,fsq,hthree}.json` — vendored.
 - `packages/lexicons/lexicons/community/lexicon/calendar/event.json` — vendored.
 - `packages/lexicons/lexicons/town/roundabout/guide/{document,place,save,venueReview}.json` — authored here.
-- `packages/lexicons/src/lexicon-docs.ts` — loads all JSON files from `lexicons/`.
-- `packages/lexicons/src/validation.ts` — the `Lexicons` instance + `assertValidRecord`.
-- `packages/lexicons/src/types.ts` — hand-authored record/feature TS types + NSID constants.
-- `packages/lexicons/src/facets.ts` — UTF-8 byte-range + segmentation + strongRef helpers.
-- `packages/lexicons/src/index.ts` — barrel export.
-- Test files alongside: `src/*.test.ts`.
+- `packages/lexicons/src/lexicon/**` — **generated** (`lexicons.ts` exporting `ids`/`lexicons`/`schemas`; `types/**` with `Record` interfaces, `isRecord`, `validateRecord`). Committed.
+- `packages/lexicons/src/facets.ts` — UTF-8 byte-range + segmentation + strongRef helpers (hand-written, decoupled from generated types).
+- `packages/lexicons/src/index.ts` — barrel: re-exports generated lexicon module + facet helpers.
+- Test files alongside: `packages/lexicons/src/*.test.ts`.
 
 ---
 
@@ -82,7 +80,7 @@ packages:
 
 - [ ] **Step 4: Create the lexicons package manifest**
 
-`packages/lexicons/package.json`:
+`packages/lexicons/package.json` — the `gen` script generates the client API, then removes the generated `index.ts` client scaffold (it imports `@atproto/xrpc`, which a shared types package should not depend on; we only consume `lexicons.ts` + `types/`):
 ```json
 {
   "name": "@guides/lexicons",
@@ -91,6 +89,7 @@ packages:
   "main": "./src/index.ts",
   "exports": { ".": "./src/index.ts" },
   "scripts": {
+    "gen": "lex gen-api ./src/lexicon $(find lexicons -name '*.json') && rm -f src/lexicon/index.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   }
@@ -111,9 +110,13 @@ Run:
 ```bash
 cd /Users/blainecook/Code/footwork
 pnpm add --filter @guides/lexicons @atproto/lexicon
-pnpm add --filter @guides/lexicons -D vitest typescript @types/node
+pnpm add --filter @guides/lexicons -D @atproto/lex-cli vitest typescript @types/node
 ```
-Expected: `pnpm-lock.yaml` created, `node_modules/` populated, no errors.
+Expected: `pnpm-lock.yaml` created/updated, `node_modules/` populated, no errors. Verify the codegen bin is present:
+```bash
+pnpm --filter @guides/lexicons exec lex --help
+```
+Expected: usage text listing `gen-api` and `gen-server` subcommands.
 
 - [ ] **Step 6: Commit**
 
@@ -126,7 +129,7 @@ git commit -m "chore: scaffold pnpm monorepo and lexicons package"
 
 ### Task 1: Vendor external lexicon JSON
 
-These are external schemas we depend on. Do not transcribe from memory — write the exact content below (verified against canonical sources).
+These are external schemas we depend on. Do not transcribe from memory — write the exact content below (verified against canonical sources). `lex-cli` must receive every referenced lexicon to resolve refs, so all of these are required.
 
 **Files:**
 - Create: `packages/lexicons/lexicons/com/atproto/repo/strongRef.json`
@@ -315,7 +318,7 @@ Run:
 cd /Users/blainecook/Code/footwork/packages/lexicons
 for f in $(find lexicons/com lexicons/community -name '*.json'); do node -e "JSON.parse(require('fs').readFileSync('$f','utf8')); console.log('ok $f')"; done
 ```
-Expected: one `ok <path>` line per file, no parse errors.
+Expected: one `ok <path>` line per file (6 files), no parse errors.
 
 - [ ] **Step 8: Commit**
 
@@ -513,27 +516,61 @@ git commit -m "feat(lexicons): author town.roundabout.guide document/place/save/
 
 ---
 
-### Task 3: Lexicon loader + runtime validation
+### Task 3: Generate types + validators with lex-cli
 
 **Files:**
-- Create: `packages/lexicons/src/lexicon-docs.ts`
-- Create: `packages/lexicons/src/validation.ts`
+- Create (generated, committed): `packages/lexicons/src/lexicon/**`
+
+- [ ] **Step 1: Run codegen**
+
+Run:
+```bash
+cd /Users/blainecook/Code/footwork/packages/lexicons
+pnpm gen
+```
+Expected: generation succeeds with no unresolved-ref errors; `src/lexicon/` is created. (The `gen` script removes the generated `index.ts` client scaffold afterward.)
+
+- [ ] **Step 2: Verify the generated structure and key exports**
+
+Run:
+```bash
+cd /Users/blainecook/Code/footwork/packages/lexicons
+ls src/lexicon
+ls src/lexicon/types/town/roundabout/guide
+grep -E "export (interface Record|function isRecord|function validateRecord)" src/lexicon/types/town/roundabout/guide/document.ts
+grep -E "export const ids|export const lexicons|export const schemas" src/lexicon/lexicons.ts
+test ! -f src/lexicon/index.ts && echo "index.ts removed OK"
+```
+Expected: `lexicons.ts` and `types/` exist; `document.ts` exports `Record`, `isRecord`, and `validateRecord`; `lexicons.ts` exports `ids`, `lexicons`, `schemas`; `index.ts removed OK`. (If lex-cli's generated symbol names differ in v0.10.0, record the actual names here — they are consumed by Tasks 4 and 6.)
+
+- [ ] **Step 3: Commit generated code**
+
+```bash
+cd /Users/blainecook/Code/footwork
+git add -A
+git commit -m "feat(lexicons): generate types and validators via lex-cli"
+```
+
+---
+
+### Task 4: Validation test against generated validators
+
+**Files:**
 - Test: `packages/lexicons/src/validation.test.ts`
 
 - [ ] **Step 1: Write the failing test**
 
-`packages/lexicons/src/validation.test.ts`:
+`packages/lexicons/src/validation.test.ts` (imports the generated `validateRecord` for the document lexicon and the `ids` map):
 ```ts
 import { describe, it, expect } from "vitest";
-import { lexicons, assertValidRecord } from "./validation";
+import { ids, lexicons } from "./lexicon/lexicons";
+import { validateRecord } from "./lexicon/types/town/roundabout/guide/document";
 
-describe("lexicon validation", () => {
-  it("loads every lexicon doc including custom and community ids", () => {
-    const ids = lexicons.docs.size ?? 0;
-    expect(ids).toBeGreaterThanOrEqual(10);
-    expect(() => lexicons.getDefOrThrow("town.roundabout.guide.document")).not.toThrow();
+describe("generated lexicon validation", () => {
+  it("exposes the ids map and a populated Lexicons instance", () => {
+    expect(ids.TownRoundaboutGuideDocument).toBe("town.roundabout.guide.document");
+    expect(ids.ComAtprotoRepoStrongRef).toBe("com.atproto.repo.strongRef");
     expect(() => lexicons.getDefOrThrow("community.lexicon.location.geo")).not.toThrow();
-    expect(() => lexicons.getDefOrThrow("com.atproto.repo.strongRef")).not.toThrow();
   });
 
   it("accepts a well-formed guide document with a placeRef facet", () => {
@@ -559,7 +596,8 @@ describe("lexicon validation", () => {
       ],
       createdAt: "2026-05-30T12:00:00.000Z",
     };
-    expect(() => assertValidRecord("town.roundabout.guide.document", record)).not.toThrow();
+    const result = validateRecord(record);
+    expect(result.success).toBe(true);
   });
 
   it("rejects a guide document missing required title", () => {
@@ -568,218 +606,38 @@ describe("lexicon validation", () => {
       text: "no title here",
       createdAt: "2026-05-30T12:00:00.000Z",
     };
-    expect(() => assertValidRecord("town.roundabout.guide.document", bad)).toThrow();
+    const result = validateRecord(bad);
+    expect(result.success).toBe(false);
   });
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `cd /Users/blainecook/Code/footwork/packages/lexicons && pnpm test`
-Expected: FAIL — cannot resolve `./validation`.
-
-- [ ] **Step 3: Write the loader**
-
-`packages/lexicons/src/lexicon-docs.ts`:
-```ts
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import type { LexiconDoc } from "@atproto/lexicon";
-
-const here = dirname(fileURLToPath(import.meta.url));
-const root = join(here, "..", "lexicons");
-
-function walk(dir: string): string[] {
-  return readdirSync(dir).flatMap((name) => {
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) return walk(p);
-    return p.endsWith(".json") ? [p] : [];
-  });
-}
-
-export const lexiconDocs: LexiconDoc[] = walk(root).map(
-  (p) => JSON.parse(readFileSync(p, "utf8")) as LexiconDoc,
-);
-```
-
-- [ ] **Step 4: Write the validation module**
-
-`packages/lexicons/src/validation.ts`:
-```ts
-import { Lexicons } from "@atproto/lexicon";
-import { lexiconDocs } from "./lexicon-docs";
-
-export const lexicons = new Lexicons(lexiconDocs);
-
-export function assertValidRecord(nsid: string, record: unknown): void {
-  lexicons.assertValidRecord(nsid, record);
-}
-```
-
-- [ ] **Step 5: Run test to verify it passes**
-
-Run: `cd /Users/blainecook/Code/footwork/packages/lexicons && pnpm test`
-Expected: PASS (3 tests). If the first test's `lexicons.docs.size` accessor differs in the installed `@atproto/lexicon` version, replace that assertion with `expect(lexiconDocs.length).toBeGreaterThanOrEqual(10)` — the loader array is the source of truth.
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add -A
-git commit -m "feat(lexicons): runtime Lexicons instance and record validation"
-```
-
----
-
-### Task 4: Record & feature TypeScript types
-
-**Files:**
-- Create: `packages/lexicons/src/types.ts`
-- Test: `packages/lexicons/src/types.test.ts`
-
-- [ ] **Step 1: Write the failing test**
-
-`packages/lexicons/src/types.test.ts`:
-```ts
-import { describe, it, expect } from "vitest";
-import { NSID, type GuideDocument, type PlaceRefFeature } from "./types";
-import { assertValidRecord } from "./validation";
-
-describe("record types", () => {
-  it("exposes NSID constants", () => {
-    expect(NSID.document).toBe("town.roundabout.guide.document");
-    expect(NSID.place).toBe("town.roundabout.guide.place");
-    expect(NSID.save).toBe("town.roundabout.guide.save");
-    expect(NSID.event).toBe("community.lexicon.calendar.event");
-  });
-
-  it("a typed GuideDocument validates against the lexicon", () => {
-    const placeRef: PlaceRefFeature = {
-      $type: "town.roundabout.guide.document#placeRef",
-      ref: {
-        uri: "at://did:plc:z72i7hdynmk6r22z27h6tvur/town.roundabout.guide.place/3jzfcijpj2z2a",
-        cid: "bafyreidfayvfuwqa7qlnopdjiqrxzs6blmoeu4rujcjtnci5beludirz2a",
-      },
-      intent: "card",
-    };
-    const doc: GuideDocument = {
-      $type: NSID.document,
-      title: "Test",
-      type: "list",
-      text: "Tartine is great.",
-      facets: [{ index: { byteStart: 0, byteEnd: 7 }, features: [placeRef] }],
-      createdAt: "2026-05-30T12:00:00.000Z",
-    };
-    expect(() => assertValidRecord(NSID.document, doc)).not.toThrow();
-  });
-});
-```
+> Note: `validateRecord` returns a `ValidationResult` discriminated on `success`. The `ids` keys are PascalCased NSIDs (lex-cli convention). If Task 3 Step 2 recorded different names, align the imports/assertions here accordingly.
 
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd /Users/blainecook/Code/footwork/packages/lexicons && pnpm test`
-Expected: FAIL — cannot resolve `./types`.
+Expected: FAIL — the test file references modules under `./lexicon` correctly, but the suite is the first to exercise them; it should fail only if a fixture or symbol name is wrong. If `validateRecord`/`ids` resolve and fixtures are valid, this test passes immediately. (This task has no implementation step because generation already produced the code under test; the "failing" gate is the import/symbol-name check.)
 
-- [ ] **Step 3: Write the types**
+- [ ] **Step 3: Make it pass**
 
-`packages/lexicons/src/types.ts`:
-```ts
-export const NSID = {
-  document: "town.roundabout.guide.document",
-  place: "town.roundabout.guide.place",
-  save: "town.roundabout.guide.save",
-  venueReview: "town.roundabout.guide.venueReview",
-  event: "community.lexicon.calendar.event",
-} as const;
-
-export interface StrongRef {
-  uri: string;
-  cid: string;
-}
-
-export interface ByteSlice {
-  byteStart: number;
-  byteEnd: number;
-}
-
-export interface FormatFeature {
-  $type: "town.roundabout.guide.document#format";
-  kind: "bold" | "italic";
-}
-
-export interface LinkFeature {
-  $type: "town.roundabout.guide.document#link";
-  uri: string;
-}
-
-export interface PlaceRefFeature {
-  $type: "town.roundabout.guide.document#placeRef";
-  ref: StrongRef;
-  intent?: "hero" | "card" | "chip";
-}
-
-export interface EventRefFeature {
-  $type: "town.roundabout.guide.document#eventRef";
-  ref: StrongRef;
-  intent?: "card";
-}
-
-export type FacetFeature =
-  | FormatFeature
-  | LinkFeature
-  | PlaceRefFeature
-  | EventRefFeature;
-
-export interface Facet {
-  index: ByteSlice;
-  features: FacetFeature[];
-}
-
-export interface GuideDocument {
-  $type: typeof NSID.document;
-  title: string;
-  type?: "curated" | "list";
-  text: string;
-  facets?: Facet[];
-  createdAt: string;
-}
-
-export type LocationPayload =
-  | ({ $type: "community.lexicon.location.address" } & Record<string, string>)
-  | ({ $type: "community.lexicon.location.geo" } & Record<string, string>)
-  | ({ $type: "community.lexicon.location.fsq" } & Record<string, string>);
-
-export interface GuidePlace {
-  $type: typeof NSID.place;
-  name: string;
-  location?: LocationPayload;
-  createdAt: string;
-}
-
-export interface GuideSave {
-  $type: typeof NSID.save;
-  subject: StrongRef;
-  createdAt: string;
-}
-```
-
-- [ ] **Step 4: Run test to verify it passes**
+If Step 2 failed on symbol names, correct the imports/assertions to match the names recorded in Task 3 Step 2, then re-run:
 
 Run: `cd /Users/blainecook/Code/footwork/packages/lexicons && pnpm test`
-Expected: PASS (all tests across both test files).
+Expected: PASS (3 assertions in this file).
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
 git add -A
-git commit -m "feat(lexicons): hand-authored record and facet feature types"
+git commit -m "test(lexicons): validate guide documents against generated schema"
 ```
 
 ---
 
 ### Task 5: UTF-8 facet helpers (byte ranges, segmentation, strongRef)
 
-The classic atproto gotcha: facet indices are **UTF-8 byte** offsets, not JS string (UTF-16) offsets. These helpers make that correct and teach it.
+The classic atproto gotcha: facet indices are **UTF-8 byte** offsets, not JS string (UTF-16) offsets. These helpers make that correct and teach it. They are intentionally decoupled from the generated record types — they operate on structural byte ranges and a generic feature list.
 
 **Files:**
 - Create: `packages/lexicons/src/facets.ts`
@@ -791,7 +649,7 @@ The classic atproto gotcha: facet indices are **UTF-8 byte** offsets, not JS str
 ```ts
 import { describe, it, expect } from "vitest";
 import { byteSliceFromChars, facetSegments, strongRef } from "./facets";
-import type { Facet, PlaceRefFeature } from "./types";
+import type { FacetLike } from "./facets";
 
 describe("facet helpers", () => {
   it("computes byte offsets that differ from char offsets for multibyte text", () => {
@@ -803,12 +661,12 @@ describe("facet helpers", () => {
 
   it("segments text into ordered plain and faceted runs", () => {
     const text = "Go to Tartine now";
-    const place: PlaceRefFeature = {
+    const place = {
       $type: "town.roundabout.guide.document#placeRef",
       ref: { uri: "at://x/y/z", cid: "bafytest" },
       intent: "card",
     };
-    const facets: Facet[] = [
+    const facets: FacetLike[] = [
       { index: byteSliceFromChars(text, 6, 13), features: [place] },
     ];
     const segs = [...facetSegments(text, facets)];
@@ -836,7 +694,26 @@ Expected: FAIL — cannot resolve `./facets`.
 
 `packages/lexicons/src/facets.ts`:
 ```ts
-import type { ByteSlice, Facet, FacetFeature, StrongRef } from "./types";
+export interface ByteSlice {
+  byteStart: number;
+  byteEnd: number;
+}
+
+/** A facet shape sufficient for segmentation: a byte range plus opaque features. */
+export interface FacetLike {
+  index: ByteSlice;
+  features: unknown[];
+}
+
+export interface Segment {
+  text: string;
+  features: unknown[];
+}
+
+export interface StrongRef {
+  uri: string;
+  cid: string;
+}
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -858,18 +735,13 @@ export function byteSliceFromChars(
   };
 }
 
-export interface Segment {
-  text: string;
-  features: FacetFeature[];
-}
-
 /**
  * Split text into ordered segments by facet byte ranges. Plain runs carry an
  * empty features array. Assumes non-overlapping facets (sufficient for the spike).
  */
 export function* facetSegments(
   text: string,
-  facets: Facet[],
+  facets: FacetLike[],
 ): Generator<Segment> {
   const bytes = encoder.encode(text);
   const sorted = [...facets].sort(
@@ -899,7 +771,7 @@ export function strongRef(uri: string, cid: string): StrongRef {
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `cd /Users/blainecook/Code/footwork/packages/lexicons && pnpm test`
-Expected: PASS (all tests).
+Expected: PASS (all tests across both files).
 
 - [ ] **Step 5: Commit**
 
@@ -925,11 +797,10 @@ import * as pkg from "./index";
 
 describe("package barrel", () => {
   it("re-exports the public API", () => {
-    expect(typeof pkg.assertValidRecord).toBe("function");
     expect(typeof pkg.byteSliceFromChars).toBe("function");
     expect(typeof pkg.facetSegments).toBe("function");
     expect(typeof pkg.strongRef).toBe("function");
-    expect(pkg.NSID.document).toBe("town.roundabout.guide.document");
+    expect(pkg.ids.TownRoundaboutGuideDocument).toBe("town.roundabout.guide.document");
     expect(pkg.lexicons).toBeDefined();
   });
 });
@@ -944,10 +815,10 @@ Expected: FAIL — cannot resolve `./index`.
 
 `packages/lexicons/src/index.ts`:
 ```ts
-export * from "./types";
+// Generated lexicon runtime: ids, lexicons (Lexicons instance), schemas.
+export { ids, lexicons, schemas } from "./lexicon/lexicons";
+// Facet helpers.
 export * from "./facets";
-export { lexicons, assertValidRecord } from "./validation";
-export { lexiconDocs } from "./lexicon-docs";
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -967,7 +838,8 @@ git commit -m "feat(lexicons): public barrel export"
 ## Definition of Done
 
 - `pnpm -r test` passes from the repo root.
-- `@guides/lexicons` exports: `lexicons`, `assertValidRecord`, `lexiconDocs`, `NSID`, all record/feature types, and `byteSliceFromChars` / `utf8Len` / `facetSegments` / `strongRef`.
-- A well-formed guide document with a `placeRef` facet validates; a malformed one is rejected.
+- `pnpm --filter @guides/lexicons gen` regenerates `src/lexicon/**` deterministically from the JSON.
+- `@guides/lexicons` exports the generated `lexicons` (Lexicons instance), `ids`, `schemas`, generated record types/validators (under `./lexicon/types/**`), and `byteSliceFromChars` / `utf8Len` / `facetSegments` / `strongRef`.
+- A well-formed guide document with a `placeRef` facet validates via the generated `validateRecord`; a malformed one is rejected.
 - Facet byte-offset correctness is proven against multibyte (emoji) text.
 - All work committed in small, green increments.
