@@ -1,0 +1,48 @@
+import { describe, it, expect } from "vitest";
+import { ids, lexicons } from "./lexicon/lexicons";
+import { validateRecord } from "./lexicon/types/town/roundabout/guide/document";
+
+describe("generated lexicon validation", () => {
+  it("exposes the ids map and a populated Lexicons instance", () => {
+    expect(ids.TownRoundaboutGuideDocument).toBe("town.roundabout.guide.document");
+    expect(ids.ComAtprotoRepoStrongRef).toBe("com.atproto.repo.strongRef");
+    expect(() => lexicons.getDefOrThrow("community.lexicon.location.geo")).not.toThrow();
+  });
+
+  it("accepts a well-formed guide document with a placeRef facet", () => {
+    const record = {
+      $type: "town.roundabout.guide.document",
+      title: "A morning in the Mission",
+      type: "list",
+      text: "Start at Tartine, then walk to Dolores Park.",
+      facets: [
+        {
+          index: { byteStart: 9, byteEnd: 16 },
+          features: [
+            {
+              $type: "town.roundabout.guide.document#placeRef",
+              ref: {
+                uri: "at://did:plc:z72i7hdynmk6r22z27h6tvur/town.roundabout.guide.place/3jzfcijpj2z2a",
+                cid: "bafyreidfayvfuwqa7qlnopdjiqrxzs6blmoeu4rujcjtnci5beludirz2a",
+              },
+              intent: "card",
+            },
+          ],
+        },
+      ],
+      createdAt: "2026-05-30T12:00:00.000Z",
+    };
+    const result = validateRecord(record);
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a guide document missing required title", () => {
+    const bad = {
+      $type: "town.roundabout.guide.document",
+      text: "no title here",
+      createdAt: "2026-05-30T12:00:00.000Z",
+    };
+    const result = validateRecord(bad);
+    expect(result.success).toBe(false);
+  });
+});

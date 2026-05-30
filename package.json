@@ -1,0 +1,8 @@
+{
+  "name": "guides",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "pnpm -r test"
+  }
+}
