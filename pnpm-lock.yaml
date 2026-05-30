@@ -13,6 +13,9 @@ importers:
       '@atproto/lexicon':
         specifier: ^0.7.1
         version: 0.7.1
+      multiformats:
+        specifier: ^14.0.0
+        version: 14.0.0
     devDependencies:
       '@atproto/lex-cli':
         specifier: ^0.10.0
@@ -380,6 +383,9 @@ packages:
 
   multiformats@13.4.2:
     resolution: {integrity: sha512-eh6eHCrRi1+POZ3dA+Dq1C6jhP1GNtr9CRINMb67OKzqW9I5DUuZM/3jLPlzhgpGeiNUlEGEbkCYChXMCc/8DQ==}
+
+  multiformats@14.0.0:
+    resolution: {integrity: sha512-iWK1RrAS58p2NDfeZFuSUSv3ZPewTIhsGbh/5NgeGGJwJmRljLxGtjRR3nkn+loG3zl+IrfR/W1590QnrSK+Gg==}
 
   nanoid@3.3.12:
     resolution: {integrity: sha512-ZB9RH/39qpq5Vu6Y+NmUaFhQR6pp+M2Xt76XBnEwDaGcVAqhlvxrl3B2bKS5D3NH3QR76v3aSrKaF/Kiy7lEtQ==}
@@ -862,6 +868,8 @@ snapshots:
       brace-expansion: 2.1.1
 
   multiformats@13.4.2: {}
+
+  multiformats@14.0.0: {}
 
   nanoid@3.3.12: {}
 

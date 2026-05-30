@@ -13,7 +13,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@atproto/lexicon": "^0.7.1"
+    "@atproto/lexicon": "^0.7.1",
+    "multiformats": "^14.0.0"
   },
   "devDependencies": {
     "@atproto/lex-cli": "^0.10.0",
