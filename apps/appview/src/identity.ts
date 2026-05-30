@@ -5,7 +5,7 @@ import type { Actor } from "./types";
 /** Minimal shape of a DID document we care about. */
 interface DidDoc {
   alsoKnownAs?: string[];
-  service?: { id: string; type: string; serviceEndpoint: string }[];
+  service?: { id: string; type: string; serviceEndpoint: string | Record<string, unknown> }[];
 }
 
 /** Low-level DID resolver function (injectable for tests). */
@@ -20,7 +20,8 @@ function handleFromDoc(doc: DidDoc): string | null {
 }
 function pdsFromDoc(doc: DidDoc): string | null {
   const svc = doc.service?.find((s) => s.type === "AtprotoPersonalDataServer");
-  return svc?.serviceEndpoint ?? null;
+  const ep = svc?.serviceEndpoint;
+  return typeof ep === "string" ? ep : null;
 }
 
 /** Resolve a DID to an Actor, caching in the actors table. Never throws. */
