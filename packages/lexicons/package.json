@@ -1,0 +1,23 @@
+{
+  "name": "@guides/lexicons",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "gen": "lex gen-api ./src/lexicon $(find lexicons -name '*.json') && rm -f src/lexicon/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@atproto/lexicon": "^0.7.1"
+  },
+  "devDependencies": {
+    "@atproto/lex-cli": "^0.10.0",
+    "@types/node": "^25.9.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.7"
+  }
+}
