@@ -1,0 +1,27 @@
+{
+  "lexicon": 1,
+  "id": "town.roundabout.guide.place",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A standalone place: a display name plus a community.lexicon location payload.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["name", "createdAt"],
+        "properties": {
+          "name": { "type": "string", "maxLength": 1200, "maxGraphemes": 300 },
+          "location": {
+            "type": "union",
+            "refs": [
+              "community.lexicon.location.address",
+              "community.lexicon.location.geo",
+              "community.lexicon.location.fsq"
+            ]
+          },
+          "createdAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}
