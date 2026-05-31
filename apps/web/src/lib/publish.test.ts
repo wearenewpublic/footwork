@@ -41,7 +41,11 @@ describe("publishGuide", () => {
     expect(docCall[0]).toBe(ids.TownRoundaboutGuideDocument);
     const docRecord = docCall[1];
     expect(docRecord.text).toBe("Go to Tartine");
-    expect(docRecord.facets[0].features[0].ref).toEqual({
+    const PLACE = ids.TownRoundaboutGuideFacet + "#place";
+    const placeFeat = (docRecord.facets as any[])
+      .flatMap((f: any) => f.features)
+      .find((feat: any) => feat.$type === PLACE);
+    expect(placeFeat?.ref).toEqual({
       uri: "at://did:plc:me/" + ids.TownRoundaboutGuidePlace + "/p1",
       cid: "bafyreidfayvfuwqa7qlnopdjiqrxzs6blmoeu4rujcjtnci5beludirz2a",
     });
