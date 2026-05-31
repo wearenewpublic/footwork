@@ -58,20 +58,19 @@ export function startJetstream(db: Db, startCursor?: number): Jetstream {
   });
 
   // Without an "error" listener, an EventEmitter "error" (e.g. a transient network
-  // drop) is rethrown and crashes the process. Log it; reconnect on close.
+  // drop) is rethrown and crashes the process. Logging it keeps the AppView alive
+  // and serving the read API even when the firehose is unreachable.
   js.on("error", (err: unknown) => {
     console.error("jetstream error:", err instanceof Error ? err.message : err);
   });
   js.on("close", () => {
-    console.warn("jetstream connection closed; reconnecting in 2s");
-    setTimeout(() => {
-      try {
-        js.start();
-      } catch (e) {
-        console.error("jetstream reconnect failed:", e);
-      }
-    }, 2000);
+    console.warn("jetstream connection closed");
   });
+  // NOTE (follow-up): automatic reconnection is intentionally NOT implemented here.
+  // A naive close->start() loop piles up overlapping sockets and can abort the
+  // process when the endpoint is persistently unreachable. Proper reconnection
+  // (single in-flight attempt + exponential backoff, or relying on the client's
+  // built-in reconnect if available) is deferred.
 
   js.start();
   return js;
