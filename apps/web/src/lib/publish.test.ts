@@ -29,7 +29,7 @@ describe("publishGuide", () => {
   it("creates the place record, then the document referencing it, and returns the doc uri", async () => {
     const createRecord = vi
       .fn()
-      .mockResolvedValueOnce({ uri: "at://did:plc:me/" + ids.TownRoundaboutGuidePlace + "/p1", cid: "bafyplace" })
+      .mockResolvedValueOnce({ uri: "at://did:plc:me/" + ids.TownRoundaboutGuidePlace + "/p1", cid: "bafyreidfayvfuwqa7qlnopdjiqrxzs6blmoeu4rujcjtnci5beludirz2a" })
       .mockResolvedValueOnce({ uri: "at://did:plc:me/" + ids.TownRoundaboutGuideDocument + "/g1", cid: "bafydoc" });
 
     const result = await publishGuide("did:plc:me", createRecord, draftWithPlace());
@@ -43,7 +43,7 @@ describe("publishGuide", () => {
     expect(docRecord.text).toBe("Go to Tartine");
     expect(docRecord.facets[0].features[0].ref).toEqual({
       uri: "at://did:plc:me/" + ids.TownRoundaboutGuidePlace + "/p1",
-      cid: "bafyplace",
+      cid: "bafyreidfayvfuwqa7qlnopdjiqrxzs6blmoeu4rujcjtnci5beludirz2a",
     });
     expect(docRecord.$type).toBe(ids.TownRoundaboutGuideDocument);
     expect(typeof docRecord.createdAt).toBe("string");

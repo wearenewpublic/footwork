@@ -52,9 +52,7 @@ export async function publishGuide(repo: string, createRecord: CreateRecord, dra
     createdAt: nowIso(),
   };
 
-  // Validate the structural record fields (title, type, text, createdAt) without
-  // deep-validating facet CIDs, which are not verifiable client-side before write.
-  lexicons.assertValidRecord(ids.TownRoundaboutGuideDocument, { ...document, facets: [] });
+  lexicons.assertValidRecord(ids.TownRoundaboutGuideDocument, document);
 
   const created = await createRecord(ids.TownRoundaboutGuideDocument, document);
   return created.uri;
