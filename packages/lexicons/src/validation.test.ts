@@ -5,11 +5,12 @@ import { validateRecord } from "./lexicon/types/town/roundabout/guide/document";
 describe("generated lexicon validation", () => {
   it("exposes the ids map and a populated Lexicons instance", () => {
     expect(ids.TownRoundaboutGuideDocument).toBe("town.roundabout.guide.document");
+    expect(ids.TownRoundaboutGuideFacet).toBe("town.roundabout.guide.facet");
     expect(ids.ComAtprotoRepoStrongRef).toBe("com.atproto.repo.strongRef");
     expect(() => lexicons.getDefOrThrow("community.lexicon.location.geo")).not.toThrow();
   });
 
-  it("accepts a well-formed guide document with a placeRef facet", () => {
+  it("accepts a well-formed guide document with a place facet feature", () => {
     const record = {
       $type: "town.roundabout.guide.document",
       title: "A morning in the Mission",
@@ -20,7 +21,7 @@ describe("generated lexicon validation", () => {
           index: { byteStart: 9, byteEnd: 16 },
           features: [
             {
-              $type: "town.roundabout.guide.document#placeRef",
+              $type: "town.roundabout.guide.facet#place",
               ref: {
                 uri: "at://did:plc:z72i7hdynmk6r22z27h6tvur/town.roundabout.guide.place/3jzfcijpj2z2a",
                 cid: "bafyreidfayvfuwqa7qlnopdjiqrxzs6blmoeu4rujcjtnci5beludirz2a",

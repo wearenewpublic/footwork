@@ -303,7 +303,7 @@ export const schemaDict = {
       main: {
         type: 'record',
         description:
-          'A guide: narrative prose with byte-ranged facets referencing places and events.',
+          'A guide: a relationaltext document (UTF-8 text + flat facets).',
         key: 'tid',
         record: {
           type: 'object',
@@ -317,7 +317,7 @@ export const schemaDict = {
             type: {
               type: 'string',
               knownValues: ['curated', 'list'],
-              description: 'Display-only flag; behavior-neutral.',
+              description: 'Display-only flag.',
             },
             text: {
               type: 'string',
@@ -341,7 +341,7 @@ export const schemaDict = {
       facet: {
         type: 'object',
         description:
-          'A typed annotation over a byte range of the document text.',
+          'A relationaltext facet: a byte range plus one or more typed features. Feature semantics are owned by the relational-text vocabulary; only structure is constrained here.',
         required: ['index', 'features'],
         properties: {
           index: {
@@ -351,21 +351,13 @@ export const schemaDict = {
           features: {
             type: 'array',
             items: {
-              type: 'union',
-              refs: [
-                'lex:town.roundabout.guide.document#format',
-                'lex:town.roundabout.guide.document#link',
-                'lex:town.roundabout.guide.document#placeRef',
-                'lex:town.roundabout.guide.document#eventRef',
-              ],
+              type: 'unknown',
             },
           },
         },
       },
       byteSlice: {
         type: 'object',
-        description:
-          'A byte index range into the UTF-8 encoded text. End-exclusive.',
         required: ['byteStart', 'byteEnd'],
         properties: {
           byteStart: {
@@ -378,32 +370,16 @@ export const schemaDict = {
           },
         },
       },
-      format: {
-        type: 'object',
-        description: 'Inline text formatting.',
-        required: ['kind'],
-        properties: {
-          kind: {
-            type: 'string',
-            knownValues: ['bold', 'italic'],
-          },
-        },
-      },
-      link: {
-        type: 'object',
-        description: 'A hyperlink.',
-        required: ['uri'],
-        properties: {
-          uri: {
-            type: 'string',
-            format: 'uri',
-          },
-        },
-      },
-      placeRef: {
+    },
+  },
+  TownRoundaboutGuideFacet: {
+    lexicon: 1,
+    id: 'town.roundabout.guide.facet',
+    defs: {
+      place: {
         type: 'object',
         description:
-          'A reference to a town.roundabout.guide.place record, with a rendering intent.',
+          'An inline reference to a town.roundabout.guide.place record.',
         required: ['ref'],
         properties: {
           ref: {
@@ -417,10 +393,10 @@ export const schemaDict = {
           },
         },
       },
-      eventRef: {
+      event: {
         type: 'object',
         description:
-          'A reference to a community.lexicon.calendar.event record, with a rendering intent.',
+          'An inline reference to a community.lexicon.calendar.event record.',
         required: ['ref'],
         properties: {
           ref: {
@@ -572,6 +548,7 @@ export const ids = {
   CommunityLexiconLocationGeo: 'community.lexicon.location.geo',
   CommunityLexiconLocationHthree: 'community.lexicon.location.hthree',
   TownRoundaboutGuideDocument: 'town.roundabout.guide.document',
+  TownRoundaboutGuideFacet: 'town.roundabout.guide.facet',
   TownRoundaboutGuidePlace: 'town.roundabout.guide.place',
   TownRoundaboutGuideSave: 'town.roundabout.guide.save',
   TownRoundaboutGuideVenueReview: 'town.roundabout.guide.venueReview',
