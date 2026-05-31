@@ -7,9 +7,12 @@ import { resolveActor } from "./identity";
 
 const DB_PATH = process.env.APPVIEW_DB ?? "appview.sqlite";
 const PORT = Number(process.env.PORT ?? 3001);
+// Optional replay cursor (unix microseconds): overrides the persisted cursor to
+// backfill recent events (e.g. records published while the AppView was down).
+const CURSOR = process.env.APPVIEW_CURSOR ? Number(process.env.APPVIEW_CURSOR) : undefined;
 
 const db = openDb(DB_PATH);
-startJetstream(db);
+startJetstream(db, CURSOR);
 
 const api = createApi({
   db,
