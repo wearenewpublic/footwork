@@ -31,15 +31,21 @@ export function toCommitEvent(evt: {
   };
 }
 
-/** Start consuming Jetstream, applying events and persisting the cursor. Returns the Jetstream instance. */
-export function startJetstream(db: Db): Jetstream {
-  const cursor = db.getCursor();
+/**
+ * Start consuming Jetstream, applying events and persisting the cursor.
+ * `startCursor` (unix microseconds) overrides the persisted cursor — useful to
+ * replay recent events (e.g. to backfill records missed while down). Returns the
+ * Jetstream instance.
+ */
+export function startJetstream(db: Db, startCursor?: number): Jetstream {
+  const persisted = db.getCursor();
+  const cursor = startCursor ?? (persisted ? Number(persisted) : undefined);
   // Cast WANTED to satisfy the typed tuple constraint; our collection strings are valid
   // Collection values but not in the @atcute/lexicons ambient Records, so a minimal
   // cast is needed.
   const js = new Jetstream({
     wantedCollections: WANTED as unknown as Array<"town.roundabout.guide.document">,
-    cursor: cursor ? Number(cursor) : undefined,
+    cursor,
   });
 
   // Cast the event to `any` since our collections resolve to custom string literals
@@ -49,6 +55,22 @@ export function startJetstream(db: Db): Jetstream {
     if (ce) applyEvent(db, ce);
     const timeUs = (evt as any).time_us;
     if (timeUs) db.setCursor(String(timeUs));
+  });
+
+  // Without an "error" listener, an EventEmitter "error" (e.g. a transient network
+  // drop) is rethrown and crashes the process. Log it; reconnect on close.
+  js.on("error", (err: unknown) => {
+    console.error("jetstream error:", err instanceof Error ? err.message : err);
+  });
+  js.on("close", () => {
+    console.warn("jetstream connection closed; reconnecting in 2s");
+    setTimeout(() => {
+      try {
+        js.start();
+      } catch (e) {
+        console.error("jetstream reconnect failed:", e);
+      }
+    }, 2000);
   });
 
   js.start();

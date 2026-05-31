@@ -20,11 +20,17 @@ export function GuideEditor({
   const [events, setEvents] = useState<Record<string, EventPayload>>({});
   const [popup, setPopup] = useState<Popup>("none");
   const [counter, setCounter] = useState(1);
+  // Tiptap v3's useEditor does not re-render React on selection/content changes,
+  // so the toolbar's `disabled={selection.empty}` would never update. Bump local
+  // state on selection/content updates to keep the toolbar in sync.
+  const [, setRev] = useState(0);
 
   const editor = useEditor({
     extensions: [StarterKit, PlaceRef, EventRef],
     content: "<p></p>",
     immediatelyRender: false,
+    onSelectionUpdate: () => setRev((r) => r + 1),
+    onUpdate: () => setRev((r) => r + 1),
   });
 
   if (!editor) return null;
