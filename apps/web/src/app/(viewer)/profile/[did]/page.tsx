@@ -1,4 +1,5 @@
 import { fetchSaves } from "../../../../lib/appview";
+import { parseAtUri } from "../../../../lib/aturi";
 import Link from "next/link";
 
 type Params = { did: string };
@@ -15,8 +16,8 @@ export default async function ProfilePage({ params }: { params: Promise<Params> 
       ) : (
         <ul>
           {saves.map((s) => {
-            const m = /^at:\/\/([^/]+)\/[^/]+\/([^/]+)$/.exec(s.subjectUri);
-            const href = m ? `/guide/${m[1]}/${m[2]}` : "#";
+            const parts = parseAtUri(s.subjectUri);
+            const href = parts ? `/guide/${parts.did}/${parts.rkey}` : "#";
             return (
               <li key={s.uri}>
                 <Link href={href}>{s.subjectUri}</Link>

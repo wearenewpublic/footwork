@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { fetchGuide } from "../../../../../lib/appview";
 import { GuideView } from "../../../../../components/GuideView";
@@ -55,7 +56,9 @@ export default async function GuidePage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <h1>{title}</h1>
-      <p className="byline">by {guide.author.handle ?? guide.author.did}</p>
+      <p className="byline">
+        by <Link href={`/profile/${guide.author.did}`}>{guide.author.handle ?? guide.author.did}</Link>
+      </p>
       {/* GuideView is an async server component */}
       <GuideView guide={guide} />
       <SaveButton subjectUri={guide.uri} subjectCid={guide.cid} />
