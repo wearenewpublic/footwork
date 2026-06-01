@@ -20,6 +20,7 @@ export interface Main {
   place: ComAtprotoRepoStrongRef.Main
   text: string
   rating?: number
+  vibes?: string[]
   createdAt: string
   [k: string]: unknown
 }

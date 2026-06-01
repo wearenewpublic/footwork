@@ -4,7 +4,7 @@
   "defs": {
     "main": {
       "type": "record",
-      "description": "A rich review wrapper: intrinsic copy and rating, referencing a place. Extension point; not wired into the spike round-trip.",
+      "description": "A rich review wrapper: intrinsic copy, rating, and vibe tags, referencing a place.",
       "key": "tid",
       "record": {
         "type": "object",
@@ -13,6 +13,11 @@
           "place": { "type": "ref", "ref": "com.atproto.repo.strongRef" },
           "text": { "type": "string", "maxLength": 10000, "maxGraphemes": 3000 },
           "rating": { "type": "integer", "minimum": 1, "maximum": 5 },
+          "vibes": {
+            "type": "array",
+            "maxLength": 8,
+            "items": { "type": "string", "maxLength": 256, "maxGraphemes": 64 }
+          },
           "createdAt": { "type": "string", "format": "datetime" }
         }
       }

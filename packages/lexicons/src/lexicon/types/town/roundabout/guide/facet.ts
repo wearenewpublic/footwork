@@ -48,3 +48,20 @@ export function isEvent<V>(v: V) {
 export function validateEvent<V>(v: V) {
   return validate<Event & V>(v, id, hashEvent)
 }
+
+/** An inline reference to a town.roundabout.guide.venueReview record, realized as a relationaltext block feature (the strongRef travels in the feature's attrs; rendered as a card). */
+export interface Review {
+  $type?: 'town.roundabout.guide.facet#review'
+  ref: ComAtprotoRepoStrongRef.Main
+  intent: 'card' | (string & {})
+}
+
+const hashReview = 'review'
+
+export function isReview<V>(v: V) {
+  return is$typed(v, id, hashReview)
+}
+
+export function validateReview<V>(v: V) {
+  return validate<Review & V>(v, id, hashReview)
+}

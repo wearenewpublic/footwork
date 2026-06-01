@@ -47,3 +47,28 @@ describe("generated lexicon validation", () => {
     expect(result.success).toBe(false);
   });
 });
+
+describe("venueReview", () => {
+  const base = {
+    $type: ids.TownRoundaboutGuideVenueReview,
+    place: { uri: "at://did:plc:a/town.roundabout.guide.place/p1", cid: "bafyreidfayvfuwqa7qlnopdjiqrxzs6blmoeu4rujcjtnci5beludirz2a" },
+    text: "Great espresso, cozy corner spot.",
+    rating: 4,
+    vibes: ["cozy", "good for groups"],
+    createdAt: "2026-06-01T00:00:00.000Z",
+  };
+
+  it("accepts a valid venueReview with vibes", () => {
+    expect(() => lexicons.assertValidRecord(ids.TownRoundaboutGuideVenueReview, base)).not.toThrow();
+  });
+
+  it("rejects a rating outside 1–5", () => {
+    expect(() => lexicons.assertValidRecord(ids.TownRoundaboutGuideVenueReview, { ...base, rating: 6 })).toThrow();
+  });
+
+  it("rejects more than 8 vibes", () => {
+    expect(() =>
+      lexicons.assertValidRecord(ids.TownRoundaboutGuideVenueReview, { ...base, vibes: Array(9).fill("x") }),
+    ).toThrow();
+  });
+});

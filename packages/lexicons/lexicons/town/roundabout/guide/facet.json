@@ -19,6 +19,15 @@
         "ref": { "type": "ref", "ref": "com.atproto.repo.strongRef" },
         "intent": { "type": "string", "knownValues": ["card"], "default": "card" }
       }
+    },
+    "review": {
+      "type": "object",
+      "description": "An inline reference to a town.roundabout.guide.venueReview record, realized as a relationaltext block feature (the strongRef travels in the feature's attrs; rendered as a card).",
+      "required": ["ref"],
+      "properties": {
+        "ref": { "type": "ref", "ref": "com.atproto.repo.strongRef" },
+        "intent": { "type": "string", "knownValues": ["card"], "default": "card" }
+      }
     }
   }
 }
