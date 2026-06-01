@@ -14,6 +14,6 @@ export const PlaceRef = Mark.create({
     return [{ tag: "span[data-place-ref]" }];
   },
   renderHTML({ HTMLAttributes }) {
-    return ["span", mergeAttributes(HTMLAttributes, { "data-place-ref": "", class: "ref ref-place" }), 0];
+    return ["span", mergeAttributes(HTMLAttributes, { "data-place-ref": "", class: "chip chip-place" }), 0];
   },
 });

@@ -22,7 +22,8 @@ h1 {
   margin-top: -0.5rem;
 }
 
-/* Inline reference chips (relationaltext place/event entity marks). */
+/* Inline reference chips: shared by the editor (Tiptap placeRef/eventRef marks)
+   and the viewer (relationaltext place/event entity marks) so they look alike. */
 .chip {
   border-radius: 0.4em;
   padding: 0.05em 0.4em;

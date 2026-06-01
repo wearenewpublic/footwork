@@ -13,6 +13,6 @@ export const EventRef = Mark.create({
     return [{ tag: "span[data-event-ref]" }];
   },
   renderHTML({ HTMLAttributes }) {
-    return ["span", mergeAttributes(HTMLAttributes, { "data-event-ref": "", class: "ref ref-event" }), 0];
+    return ["span", mergeAttributes(HTMLAttributes, { "data-event-ref": "", class: "chip chip-event" }), 0];
   },
 });
