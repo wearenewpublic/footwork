@@ -22,6 +22,7 @@ function draftWithPlace(): Draft {
     doc,
     places: { "place-1": { name: "Tartine", location: { $type: ids.CommunityLexiconLocationGeo, latitude: "37.76", longitude: "-122.42" } } },
     events: {},
+    reviews: {},
   };
 }
 
@@ -51,6 +52,37 @@ describe("publishGuide", () => {
     });
     expect(docRecord.$type).toBe(ids.TownRoundaboutGuideDocument);
     expect(typeof docRecord.createdAt).toBe("string");
+  });
+
+  it("creates a review's place then venueReview, points the ref at the venueReview, then the doc", async () => {
+    const placeUri = "at://did:plc:me/" + ids.TownRoundaboutGuidePlace + "/rp1";
+    const reviewUri = "at://did:plc:me/" + ids.TownRoundaboutGuideVenueReview + "/rv1";
+    const createRecord = vi
+      .fn()
+      .mockResolvedValueOnce({ uri: placeUri, cid: "bafyrplace" })
+      .mockResolvedValueOnce({ uri: reviewUri, cid: "bafyrreview" })
+      .mockResolvedValueOnce({ uri: "at://did:plc:me/" + ids.TownRoundaboutGuideDocument + "/g1", cid: "bafydoc" });
+
+    const doc: PMDoc = { type: "doc", content: [
+      { type: "reviewBlock", attrs: { refId: "review-1", placeName: "Joe's", rating: 4 } },
+    ] };
+    const draft: Draft = {
+      title: "Cafes", type: "list", doc, places: {}, events: {},
+      reviews: { "review-1": { place: { name: "Joe's" }, text: "Great", rating: 4, vibes: ["cozy"] } },
+    };
+
+    await publishGuide("did:plc:me", createRecord, draft);
+
+    expect(createRecord.mock.calls[0][0]).toBe(ids.TownRoundaboutGuidePlace);
+    expect(createRecord.mock.calls[1][0]).toBe(ids.TownRoundaboutGuideVenueReview);
+    const reviewRec = createRecord.mock.calls[1][1];
+    expect(reviewRec.place).toEqual({ uri: placeUri, cid: "bafyrplace" });
+    expect(reviewRec.rating).toBe(4);
+    expect(reviewRec.vibes).toEqual(["cozy"]);
+    const docRec = createRecord.mock.calls[2][1];
+    const REVIEW = ids.TownRoundaboutGuideFacet + "#review";
+    const feat = (docRec.facets as any[]).flatMap((f) => f.features).find((x) => x.$type === REVIEW);
+    expect(feat.attrs.ref).toEqual({ uri: reviewUri, cid: "bafyrreview" });
   });
 
   it("rejects a draft whose document violates the lexicon (title too long)", async () => {

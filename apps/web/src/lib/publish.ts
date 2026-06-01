@@ -10,12 +10,19 @@ export interface EventPayload {
   name: string;
   startsAt?: string;
 }
+export interface ReviewPayload {
+  place: PlacePayload;
+  text: string;
+  rating: number;
+  vibes: string[];
+}
 export interface Draft {
   title: string;
   type: "curated" | "list";
   doc: PMDoc;
   places: Record<string, PlacePayload>;
   events: Record<string, EventPayload>;
+  reviews: Record<string, ReviewPayload>;
 }
 
 export type CreateRecord = (
@@ -40,6 +47,26 @@ export async function publishGuide(repo: string, createRecord: CreateRecord, dra
     const record = { $type: ids.CommunityLexiconCalendarEvent, name: event.name, startsAt: event.startsAt, createdAt: nowIso() };
     const ref = await createRecord(ids.CommunityLexiconCalendarEvent, record);
     refMap[refId] = { uri: ref.uri, cid: ref.cid } satisfies StrongRef;
+  }
+
+  for (const [refId, review] of Object.entries(draft.reviews)) {
+    const placeRecord = {
+      $type: ids.TownRoundaboutGuidePlace,
+      name: review.place.name,
+      location: review.place.location,
+      createdAt: nowIso(),
+    };
+    const placeRef = await createRecord(ids.TownRoundaboutGuidePlace, placeRecord);
+    const reviewRecord = {
+      $type: ids.TownRoundaboutGuideVenueReview,
+      place: { uri: placeRef.uri, cid: placeRef.cid },
+      text: review.text,
+      rating: review.rating,
+      vibes: review.vibes,
+      createdAt: nowIso(),
+    };
+    const reviewRef = await createRecord(ids.TownRoundaboutGuideVenueReview, reviewRecord);
+    refMap[refId] = { uri: reviewRef.uri, cid: reviewRef.cid } satisfies StrongRef;
   }
 
   const { text, facets } = documentWire(await tiptapToDocument(draft.doc, refMap));
