@@ -43,9 +43,10 @@ Two strongRef hops is the novel part: today every facet resolves in one hop.
 ## §1 Data model & lexicon (`@guides/lexicons`)
 
 - **`venueReview.json`**: add
-  `"vibes": { "type": "array", "items": { "type": "string", "maxGraphemes": 64 }, "maxLength": 8 }`.
+  `"vibes": { "type": "array", "maxLength": 8, "items": { "type": "string", "minLength": 1, "maxLength": 256, "maxGraphemes": 64 } }`.
   Keep `place` (strongRef), `text` (≤3000 graphemes), `rating` (1–5),
-  `createdAt`. `vibes` is optional.
+  `createdAt`. `vibes` is optional; the `minLength: 1` on items rejects
+  empty-string tags (added during implementation per code review).
 - **`facet.json`**: add a `review` def mirroring `place`/`event`:
   `{ "required": ["ref"], "properties": { "ref": strongRef, "intent": { knownValues: ["card"], default: "card" } } }`.
 - Regenerate types with `pnpm gen` (interactive lex-cli; generated TS is
