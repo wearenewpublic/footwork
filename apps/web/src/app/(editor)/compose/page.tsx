@@ -7,7 +7,7 @@ import { buildDraft } from "../../../lib/draft";
 import { publishGuide } from "../../../lib/publish";
 import { makeCreateRecord } from "../../../lib/agent";
 import type { PMDoc } from "../../../lib/doc";
-import type { PlacePayload, EventPayload } from "../../../lib/publish";
+import type { PlacePayload, EventPayload, ReviewPayload } from "../../../lib/publish";
 
 function Composer() {
   const { agent, did } = useAuth();
@@ -20,11 +20,12 @@ function Composer() {
     doc: PMDoc,
     places: Record<string, PlacePayload>,
     events: Record<string, EventPayload>,
+    reviews: Record<string, ReviewPayload>,
   ) => {
     setError(null);
     try {
       if (!agent || !did) throw new Error("not signed in");
-      const draft = buildDraft(doc, title, type, places, events);
+      const draft = buildDraft(doc, title, type, places, events, reviews);
       const uri = await publishGuide(did, makeCreateRecord(agent, did), draft);
       setResultUri(uri);
     } catch (e) {

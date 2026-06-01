@@ -4,20 +4,23 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { PlaceRef } from "../lib/tiptap/placeRef";
 import { EventRef } from "../lib/tiptap/eventRef";
+import { ReviewBlock } from "../lib/tiptap/reviewBlock";
 import { CreatePlacePopup } from "./CreatePlacePopup";
 import { CreateEventPopup } from "./CreateEventPopup";
+import { CreateReviewPopup } from "./CreateReviewPopup";
 import type { PMDoc } from "../lib/doc";
-import type { PlacePayload, EventPayload } from "../lib/publish";
+import type { PlacePayload, EventPayload, ReviewPayload } from "../lib/publish";
 
-type Popup = "none" | "place" | "event";
+type Popup = "none" | "place" | "event" | "review";
 
 export function GuideEditor({
   onPublish,
 }: {
-  onPublish: (doc: PMDoc, places: Record<string, PlacePayload>, events: Record<string, EventPayload>) => void;
+  onPublish: (doc: PMDoc, places: Record<string, PlacePayload>, events: Record<string, EventPayload>, reviews: Record<string, ReviewPayload>) => void;
 }) {
   const [places, setPlaces] = useState<Record<string, PlacePayload>>({});
   const [events, setEvents] = useState<Record<string, EventPayload>>({});
+  const [reviews, setReviews] = useState<Record<string, ReviewPayload>>({});
   const [popup, setPopup] = useState<Popup>("none");
   const [counter, setCounter] = useState(1);
   // Tiptap v3's useEditor does not re-render React on selection/content changes,
@@ -26,7 +29,7 @@ export function GuideEditor({
   const [, setRev] = useState(0);
 
   const editor = useEditor({
-    extensions: [StarterKit, PlaceRef, EventRef],
+    extensions: [StarterKit, PlaceRef, EventRef, ReviewBlock],
     content: "<p></p>",
     immediatelyRender: false,
     onSelectionUpdate: () => setRev((r) => r + 1),
@@ -49,6 +52,16 @@ export function GuideEditor({
     editor.chain().focus().setMark("eventRef", { refId, intent: "card" }).run();
     setPopup("none");
   };
+  const addReview = (r: ReviewPayload) => {
+    const refId = `review-${counter}`;
+    setCounter((c) => c + 1);
+    setReviews((m) => ({ ...m, [refId]: r }));
+    editor.chain().focus().insertContent({
+      type: "reviewBlock",
+      attrs: { refId, placeName: r.place.name, rating: r.rating },
+    }).run();
+    setPopup("none");
+  };
 
   return (
     <div>
@@ -57,11 +70,13 @@ export function GuideEditor({
         <button onClick={() => editor.chain().focus().toggleItalic().run()}>Italic</button>
         <button onClick={() => setPopup("place")} disabled={editor.state.selection.empty}>Add place</button>
         <button onClick={() => setPopup("event")} disabled={editor.state.selection.empty}>Add event</button>
+        <button onClick={() => setPopup("review")}>Add review</button>
       </div>
       <EditorContent editor={editor} />
       {popup === "place" && <CreatePlacePopup onSubmit={addPlace} onCancel={() => setPopup("none")} />}
       {popup === "event" && <CreateEventPopup onSubmit={addEvent} onCancel={() => setPopup("none")} />}
-      <button onClick={() => onPublish(editor.getJSON() as PMDoc, places, events)}>Publish</button>
+      {popup === "review" && <CreateReviewPopup onSubmit={addReview} onCancel={() => setPopup("none")} />}
+      <button onClick={() => onPublish(editor.getJSON() as PMDoc, places, events, reviews)}>Publish</button>
     </div>
   );
 }
