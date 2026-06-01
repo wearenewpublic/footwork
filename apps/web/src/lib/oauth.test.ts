@@ -18,6 +18,21 @@ describe("buildClientMetadata", () => {
     expect(meta.scope.split(" ")).toContain("atproto");
   });
 
+  test("grants write scope for every collection the publish pipeline creates", () => {
+    // publishGuide / save create records in these collections; each needs a repo: scope
+    // or the PDS rejects the write ("Missing required scope repo:<nsid>?action=create").
+    const scopes = SCOPE.split(" ");
+    for (const nsid of [
+      "town.roundabout.guide.document",
+      "town.roundabout.guide.place",
+      "community.lexicon.calendar.event",
+      "town.roundabout.guide.venueReview",
+      "town.roundabout.guide.save",
+    ]) {
+      expect(scopes).toContain(`repo:${nsid}`);
+    }
+  });
+
   test("is a public client bound to DPoP (atproto requirements)", () => {
     expect(meta.token_endpoint_auth_method).toBe("none");
     expect(meta.dpop_bound_access_tokens).toBe(true);
