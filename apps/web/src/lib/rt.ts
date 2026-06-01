@@ -17,6 +17,14 @@ export type RefMap = Record<string, StrongRef>;
 const enc = new TextEncoder();
 const byteLen = (s: string): number => enc.encode(s).length;
 
+// relationaltext block markers: a single sentinel char per block, embedded in the
+// text. The first block uses U+FFFC (OBJECT REPLACEMENT CHAR), every subsequent
+// block uses LINE FEED. The block facet covers ONLY the marker char; the block's
+// content is the text following the marker up to the next marker. (See the
+// relationaltext "Blocks" guide.)
+const FIRST_BLOCK_MARKER = "￼";
+const NEXT_BLOCK_MARKER = "\n";
+
 function markInput(mark: PMMark, refMap: RefMap): Record<string, unknown> | null {
   switch (mark.type) {
     case "bold":
@@ -38,11 +46,14 @@ export async function tiptapToDocument(json: PMDoc, refMap: RefMap): Promise<Doc
   await ensureInit();
   let text = "";
   const spans: { byteStart: number; byteEnd: number; mark: Record<string, unknown> }[] = [];
-  const blocks: { start: number; end: number }[] = [];
+  // Each paragraph contributes a one-char block marker; the block facet covers
+  // only that marker's bytes.
+  const markers: { start: number; end: number }[] = [];
 
   json.content.forEach((para, pIdx) => {
-    if (pIdx > 0) text += "\n\n";
-    const blockStart = byteLen(text);
+    const markerStart = byteLen(text);
+    text += pIdx === 0 ? FIRST_BLOCK_MARKER : NEXT_BLOCK_MARKER;
+    markers.push({ start: markerStart, end: byteLen(text) });
     for (const node of para.content ?? []) {
       const start = byteLen(text);
       text += node.text;
@@ -52,11 +63,10 @@ export async function tiptapToDocument(json: PMDoc, refMap: RefMap): Promise<Doc
         if (mi) spans.push({ byteStart: start, byteEnd: end, mark: mi });
       }
     }
-    blocks.push({ start: blockStart, end: byteLen(text) });
   });
 
   let doc = Document.fromText(text);
-  for (const b of blocks) doc = doc.addBlock(b.start, b.end, { name: "paragraph", parents: [] });
+  for (const m of markers) doc = doc.addBlock(m.start, m.end, { name: "paragraph", parents: [] });
   for (const s of spans) doc = doc.addMark(s.byteStart, s.byteEnd, s.mark as any);
   return doc;
 }

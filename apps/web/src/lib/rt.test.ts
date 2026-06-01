@@ -1,45 +1,61 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { ensureInit, tiptapToDocument, documentWire } from "./rt";
+import { ensureInit, tiptapToDocument, documentWire, documentFromWire } from "./rt";
 import { ids } from "@guides/lexicons";
 import type { PMDoc } from "./doc";
 
 const place = { uri: "at://did:plc:a/town.roundabout.guide.place/p1", cid: "bafyplace" };
 const PLACE = ids.TownRoundaboutGuideFacet + "#place";
 
-beforeAll(async () => { await ensureInit(); });
+beforeAll(async () => {
+  await ensureInit();
+});
 
-describe("tiptapToDocument", () => {
-  it("emits a place entity facet over the correct UTF-8 byte range", async () => {
+// Render through the full store→reload→HIR path the viewer uses.
+function hirOf(doc: Awaited<ReturnType<typeof tiptapToDocument>>) {
+  return documentFromWire(documentWire(doc)).toHIR() as any[];
+}
+const blocks = (hir: any[]) => hir.filter((n) => n.type === "block");
+const blockText = (b: any): string => (b.children ?? []).map((c: any) => c.content ?? "").join("");
+const markKinds = (b: any): string[] => (b.children ?? []).flatMap((c: any) => (c.marks ?? []).map((m: any) => m.kind));
+
+describe("tiptapToDocument → HIR", () => {
+  it("renders prose into a paragraph block with a place mark on the right span", async () => {
     const json: PMDoc = { type: "doc", content: [{ type: "paragraph", content: [
       { type: "text", text: "Go to " },
       { type: "text", text: "Tartine", marks: [{ type: "placeRef", attrs: { refId: "t1", intent: "card" } }] },
     ] }] };
-    const { text, facets } = documentWire(await tiptapToDocument(json, { t1: place }));
-    expect(text).toBe("Go to Tartine");
-    const placeFacet = (facets as any[]).find((f) => f.features.some((x: any) => x.$type === PLACE));
-    expect(placeFacet.index).toEqual({ byteStart: 6, byteEnd: 13 });
-    const feat = (facets as any[]).flatMap((f) => f.features).find((f: any) => f.$type === PLACE);
-    expect(feat).toMatchObject({ ref: place, intent: "card" });
+    const hir = hirOf(await tiptapToDocument(json, { t1: place }));
+    const bs = blocks(hir);
+    expect(bs.length).toBe(1);
+    expect(blockText(bs[0])).toBe("Go to Tartine"); // prose present, no leading marker
+    expect(markKinds(bs[0])).toContain(PLACE);
+    // the place mark sits on the "Tartine" span and carries the ref
+    const placeChild = bs[0].children.find((c: any) => (c.marks ?? []).some((m: any) => m.kind === PLACE));
+    expect(placeChild.content).toBe("Tartine");
+    expect(placeChild.marks.find((m: any) => m.kind === PLACE).attrs).toMatchObject({ ref: place, intent: "card" });
   });
 
-  it("multibyte: byte offsets account for emoji", async () => {
+  it("handles multibyte prose (emoji) without corrupting the text", async () => {
     const json: PMDoc = { type: "doc", content: [{ type: "paragraph", content: [
       { type: "text", text: "👋 " },
       { type: "text", text: "Tartine", marks: [{ type: "placeRef", attrs: { refId: "t1", intent: "card" } }] },
     ] }] };
-    const { facets } = documentWire(await tiptapToDocument(json, { t1: place }));
-    const f = (facets as any[]).find((x) => x.features.some((y: any) => y.$type === PLACE));
-    expect(f.index).toEqual({ byteStart: 5, byteEnd: 12 });
+    const hir = hirOf(await tiptapToDocument(json, { t1: place }));
+    expect(blockText(blocks(hir)[0])).toBe("👋 Tartine");
+    expect(markKinds(blocks(hir)[0])).toContain(PLACE);
   });
 
-  it("bold maps to a hub mark; unresolved refIds drop the entity but keep text", async () => {
+  it("two paragraphs; bold maps to a hub mark; unresolved refIds drop the entity but keep text", async () => {
     const json: PMDoc = { type: "doc", content: [
       { type: "paragraph", content: [{ type: "text", text: "hi", marks: [{ type: "bold" }] }] },
       { type: "paragraph", content: [{ type: "text", text: "x", marks: [{ type: "placeRef", attrs: { refId: "missing" } }] }] },
     ] };
-    const { text, facets } = documentWire(await tiptapToDocument(json, {}));
-    expect(text).toBe("hi\n\nx");
-    expect((facets as any[]).flatMap((f) => f.features).some((f: any) => f.name === "bold")).toBe(true);
-    expect((facets as any[]).flatMap((f) => f.features).some((f: any) => f.$type === PLACE)).toBe(false);
+    const hir = hirOf(await tiptapToDocument(json, {}));
+    const bs = blocks(hir);
+    expect(bs.length).toBe(2);
+    expect(blockText(bs[0])).toBe("hi");
+    expect(markKinds(bs[0])).toContain("org.relationaltext.facet#bold");
+    expect(blockText(bs[1])).toBe("x"); // text kept
+    expect(markKinds(bs[1])).not.toContain(PLACE); // unresolved entity dropped
   });
 });
