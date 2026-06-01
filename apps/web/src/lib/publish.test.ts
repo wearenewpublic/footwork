@@ -74,6 +74,7 @@ describe("publishGuide", () => {
     await publishGuide("did:plc:me", createRecord, draft);
 
     expect(createRecord.mock.calls[0][0]).toBe(ids.TownRoundaboutGuidePlace);
+    expect(createRecord.mock.calls[0][1].name).toBe("Joe's");
     expect(createRecord.mock.calls[1][0]).toBe(ids.TownRoundaboutGuideVenueReview);
     const reviewRec = createRecord.mock.calls[1][1];
     expect(reviewRec.place).toEqual({ uri: placeUri, cid: "bafyrplace" });

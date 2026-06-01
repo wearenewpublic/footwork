@@ -34,11 +34,15 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
+function makePlaceRecord(p: PlacePayload): Record<string, unknown> {
+  return { $type: ids.TownRoundaboutGuidePlace, name: p.name, location: p.location, createdAt: nowIso() };
+}
+
 export async function publishGuide(repo: string, createRecord: CreateRecord, draft: Draft): Promise<string> {
   const refMap: RefMap = {};
 
   for (const [refId, place] of Object.entries(draft.places)) {
-    const record = { $type: ids.TownRoundaboutGuidePlace, name: place.name, location: place.location, createdAt: nowIso() };
+    const record = makePlaceRecord(place);
     const ref = await createRecord(ids.TownRoundaboutGuidePlace, record);
     refMap[refId] = { uri: ref.uri, cid: ref.cid } satisfies StrongRef;
   }
@@ -50,12 +54,7 @@ export async function publishGuide(repo: string, createRecord: CreateRecord, dra
   }
 
   for (const [refId, review] of Object.entries(draft.reviews)) {
-    const placeRecord = {
-      $type: ids.TownRoundaboutGuidePlace,
-      name: review.place.name,
-      location: review.place.location,
-      createdAt: nowIso(),
-    };
+    const placeRecord = makePlaceRecord(review.place);
     const placeRef = await createRecord(ids.TownRoundaboutGuidePlace, placeRecord);
     const reviewRecord = {
       $type: ids.TownRoundaboutGuideVenueReview,
