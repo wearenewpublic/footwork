@@ -26,6 +26,12 @@ export interface SaveRow {
   subjectCid: string;
 }
 
+export interface GuideListItem {
+  uri: string;
+  did: string;
+  record: Record<string, unknown>;
+}
+
 const BASE = process.env.NEXT_PUBLIC_APPVIEW_URL ?? "http://localhost:3001";
 export function appviewUrl(path: string): string {
   return `${BASE}${path}`;
@@ -55,4 +61,11 @@ export async function fetchSaves(
   if (!res.ok) return [];
   const body = (await res.json()) as { saves: SaveRow[] };
   return body.saves ?? [];
+}
+
+export async function listGuides(f: Fetch = fetch): Promise<GuideListItem[]> {
+  const res = await f(appviewUrl("/guides"), { cache: "no-store" });
+  if (!res.ok) return [];
+  const body = (await res.json()) as { guides: GuideListItem[] };
+  return body.guides ?? [];
 }
