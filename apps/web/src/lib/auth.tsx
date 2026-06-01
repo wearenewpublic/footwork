@@ -9,6 +9,7 @@ const SCOPE = [
   "repo:town.roundabout.guide.document",
   "repo:town.roundabout.guide.place",
   "repo:community.lexicon.calendar.event",
+  "repo:town.roundabout.guide.save",
 ].join(" ");
 
 interface AuthState {

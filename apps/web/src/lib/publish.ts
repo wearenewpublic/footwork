@@ -1,6 +1,6 @@
 import { ids, lexicons, type StrongRef } from "@guides/lexicons";
 import type { PMDoc } from "./doc";
-import { docToStorage, type RefMap } from "./richtext-lens";
+import { tiptapToDocument, documentWire, type RefMap } from "./rt";
 
 export interface PlacePayload {
   name: string;
@@ -42,7 +42,7 @@ export async function publishGuide(repo: string, createRecord: CreateRecord, dra
     refMap[refId] = { uri: ref.uri, cid: ref.cid } satisfies StrongRef;
   }
 
-  const { text, facets } = docToStorage(draft.doc, refMap);
+  const { text, facets } = documentWire(await tiptapToDocument(draft.doc, refMap));
   const document: Record<string, unknown> = {
     $type: ids.TownRoundaboutGuideDocument,
     title: draft.title,

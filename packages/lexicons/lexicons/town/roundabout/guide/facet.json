@@ -1,0 +1,24 @@
+{
+  "lexicon": 1,
+  "id": "town.roundabout.guide.facet",
+  "defs": {
+    "place": {
+      "type": "object",
+      "description": "An inline reference to a town.roundabout.guide.place record.",
+      "required": ["ref"],
+      "properties": {
+        "ref": { "type": "ref", "ref": "com.atproto.repo.strongRef" },
+        "intent": { "type": "string", "knownValues": ["hero", "card", "chip"], "default": "card" }
+      }
+    },
+    "event": {
+      "type": "object",
+      "description": "An inline reference to a community.lexicon.calendar.event record.",
+      "required": ["ref"],
+      "properties": {
+        "ref": { "type": "ref", "ref": "com.atproto.repo.strongRef" },
+        "intent": { "type": "string", "knownValues": ["card"], "default": "card" }
+      }
+    }
+  }
+}

@@ -4,14 +4,14 @@
   "defs": {
     "main": {
       "type": "record",
-      "description": "A guide: narrative prose with byte-ranged facets referencing places and events.",
+      "description": "A guide: a relationaltext document (UTF-8 text + flat facets).",
       "key": "tid",
       "record": {
         "type": "object",
         "required": ["title", "text", "createdAt"],
         "properties": {
           "title": { "type": "string", "maxLength": 1200, "maxGraphemes": 300 },
-          "type": { "type": "string", "knownValues": ["curated", "list"], "description": "Display-only flag; behavior-neutral." },
+          "type": { "type": "string", "knownValues": ["curated", "list"], "description": "Display-only flag." },
           "text": { "type": "string", "maxLength": 100000, "maxGraphemes": 30000 },
           "facets": { "type": "array", "items": { "type": "ref", "ref": "#facet" } },
           "createdAt": { "type": "string", "format": "datetime" }
@@ -20,50 +20,19 @@
     },
     "facet": {
       "type": "object",
-      "description": "A typed annotation over a byte range of the document text.",
+      "description": "A relationaltext facet: a byte range plus one or more typed features. Feature semantics are owned by the relational-text vocabulary; only structure is constrained here.",
       "required": ["index", "features"],
       "properties": {
         "index": { "type": "ref", "ref": "#byteSlice" },
-        "features": { "type": "array", "items": { "type": "union", "refs": ["#format", "#link", "#placeRef", "#eventRef"] } }
+        "features": { "type": "array", "items": { "type": "unknown" } }
       }
     },
     "byteSlice": {
       "type": "object",
-      "description": "A byte index range into the UTF-8 encoded text. End-exclusive.",
       "required": ["byteStart", "byteEnd"],
       "properties": {
         "byteStart": { "type": "integer", "minimum": 0 },
         "byteEnd": { "type": "integer", "minimum": 0 }
-      }
-    },
-    "format": {
-      "type": "object",
-      "description": "Inline text formatting.",
-      "required": ["kind"],
-      "properties": { "kind": { "type": "string", "knownValues": ["bold", "italic"] } }
-    },
-    "link": {
-      "type": "object",
-      "description": "A hyperlink.",
-      "required": ["uri"],
-      "properties": { "uri": { "type": "string", "format": "uri" } }
-    },
-    "placeRef": {
-      "type": "object",
-      "description": "A reference to a town.roundabout.guide.place record, with a rendering intent.",
-      "required": ["ref"],
-      "properties": {
-        "ref": { "type": "ref", "ref": "com.atproto.repo.strongRef" },
-        "intent": { "type": "string", "knownValues": ["hero", "card", "chip"], "default": "card" }
-      }
-    },
-    "eventRef": {
-      "type": "object",
-      "description": "A reference to a community.lexicon.calendar.event record, with a rendering intent.",
-      "required": ["ref"],
-      "properties": {
-        "ref": { "type": "ref", "ref": "com.atproto.repo.strongRef" },
-        "intent": { "type": "string", "knownValues": ["card"], "default": "card" }
       }
     }
   }
