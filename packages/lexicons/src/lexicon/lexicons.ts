@@ -410,6 +410,23 @@ export const schemaDict = {
           },
         },
       },
+      review: {
+        type: 'object',
+        description:
+          "An inline reference to a town.roundabout.guide.venueReview record, realized as a relationaltext block feature (the strongRef travels in the feature's attrs; rendered as a card).",
+        required: ['ref'],
+        properties: {
+          ref: {
+            type: 'ref',
+            ref: 'lex:com.atproto.repo.strongRef',
+          },
+          intent: {
+            type: 'string',
+            knownValues: ['card'],
+            default: 'card',
+          },
+        },
+      },
     },
   },
   TownRoundaboutGuidePlace: {
@@ -479,7 +496,7 @@ export const schemaDict = {
       main: {
         type: 'record',
         description:
-          'A rich review wrapper: intrinsic copy and rating, referencing a place. Extension point; not wired into the spike round-trip.',
+          'A rich review wrapper: intrinsic copy, rating, and vibe tags, referencing a place.',
         key: 'tid',
         record: {
           type: 'object',
@@ -498,6 +515,16 @@ export const schemaDict = {
               type: 'integer',
               minimum: 1,
               maximum: 5,
+            },
+            vibes: {
+              type: 'array',
+              maxLength: 8,
+              items: {
+                type: 'string',
+                minLength: 1,
+                maxLength: 256,
+                maxGraphemes: 64,
+              },
             },
             createdAt: {
               type: 'string',

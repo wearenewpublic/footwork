@@ -1,14 +1,19 @@
-import { Document } from "relational-text/core";
+import { Document, registerFeatureType } from "relational-text/core";
 import { init } from "relational-text/registry";
 import { ids, type StrongRef } from "@guides/lexicons";
 import type { PMDoc, PMMark } from "./doc";
 
 const PLACE = `${ids.TownRoundaboutGuideFacet}#place`;
 const EVENT = `${ids.TownRoundaboutGuideFacet}#event`;
+const REVIEW = `${ids.TownRoundaboutGuideFacet}#review`;
 
 let _ready: Promise<void> | null = null;
 export function ensureInit(): Promise<void> {
-  if (!_ready) _ready = init();
+  if (!_ready) {
+    _ready = init().then(() => {
+      registerFeatureType({ typeId: REVIEW, featureClass: "block", void: true });
+    });
+  }
   return _ready;
 }
 
@@ -49,16 +54,26 @@ export async function tiptapToDocument(json: PMDoc, refMap: RefMap): Promise<Doc
   // Each paragraph contributes a one-char block marker; the block facet covers
   // only that marker's bytes.
   const markers: { start: number; end: number }[] = [];
+  const reviewMarkers: { start: number; end: number; ref: { uri: string; cid: string } }[] = [];
 
-  json.content.forEach((para, pIdx) => {
+  json.content.forEach((node, idx) => {
     const markerStart = byteLen(text);
-    text += pIdx === 0 ? FIRST_BLOCK_MARKER : NEXT_BLOCK_MARKER;
-    markers.push({ start: markerStart, end: byteLen(text) });
-    for (const node of para.content ?? []) {
+    text += idx === 0 ? FIRST_BLOCK_MARKER : NEXT_BLOCK_MARKER;
+    const markerEnd = byteLen(text);
+
+    if (node.type === "reviewBlock") {
+      const ref = refMap[node.attrs.refId];
+      if (ref) reviewMarkers.push({ start: markerStart, end: markerEnd, ref: { uri: ref.uri, cid: ref.cid } });
+      else markers.push({ start: markerStart, end: markerEnd }); // unresolved → plain paragraph, no leak
+      return;
+    }
+
+    markers.push({ start: markerStart, end: markerEnd });
+    for (const tn of node.content ?? []) {
       const start = byteLen(text);
-      text += node.text;
+      text += tn.text;
       const end = byteLen(text);
-      for (const m of node.marks ?? []) {
+      for (const m of tn.marks ?? []) {
         const mi = markInput(m, refMap);
         if (mi) spans.push({ byteStart: start, byteEnd: end, mark: mi });
       }
@@ -67,6 +82,14 @@ export async function tiptapToDocument(json: PMDoc, refMap: RefMap): Promise<Doc
 
   let doc = Document.fromText(text);
   for (const m of markers) doc = doc.addBlock(m.start, m.end, { name: "paragraph", parents: [] });
+  for (const r of reviewMarkers) {
+    doc = doc.addBlock(r.start, r.end, {
+      $type: REVIEW,
+      name: "review",
+      parents: [],
+      attrs: { ref: r.ref, intent: "card" },
+    });
+  }
   for (const s of spans) doc = doc.addMark(s.byteStart, s.byteEnd, s.mark as any);
   return doc;
 }

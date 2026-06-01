@@ -10,12 +10,19 @@ export interface EventPayload {
   name: string;
   startsAt?: string;
 }
+export interface ReviewPayload {
+  place: PlacePayload;
+  text: string;
+  rating: number;
+  vibes: string[];
+}
 export interface Draft {
   title: string;
   type: "curated" | "list";
   doc: PMDoc;
   places: Record<string, PlacePayload>;
   events: Record<string, EventPayload>;
+  reviews: Record<string, ReviewPayload>;
 }
 
 export type CreateRecord = (
@@ -27,11 +34,15 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
+function makePlaceRecord(p: PlacePayload): Record<string, unknown> {
+  return { $type: ids.TownRoundaboutGuidePlace, name: p.name, location: p.location, createdAt: nowIso() };
+}
+
 export async function publishGuide(repo: string, createRecord: CreateRecord, draft: Draft): Promise<string> {
   const refMap: RefMap = {};
 
   for (const [refId, place] of Object.entries(draft.places)) {
-    const record = { $type: ids.TownRoundaboutGuidePlace, name: place.name, location: place.location, createdAt: nowIso() };
+    const record = makePlaceRecord(place);
     const ref = await createRecord(ids.TownRoundaboutGuidePlace, record);
     refMap[refId] = { uri: ref.uri, cid: ref.cid } satisfies StrongRef;
   }
@@ -40,6 +51,21 @@ export async function publishGuide(repo: string, createRecord: CreateRecord, dra
     const record = { $type: ids.CommunityLexiconCalendarEvent, name: event.name, startsAt: event.startsAt, createdAt: nowIso() };
     const ref = await createRecord(ids.CommunityLexiconCalendarEvent, record);
     refMap[refId] = { uri: ref.uri, cid: ref.cid } satisfies StrongRef;
+  }
+
+  for (const [refId, review] of Object.entries(draft.reviews)) {
+    const placeRecord = makePlaceRecord(review.place);
+    const placeRef = await createRecord(ids.TownRoundaboutGuidePlace, placeRecord);
+    const reviewRecord = {
+      $type: ids.TownRoundaboutGuideVenueReview,
+      place: { uri: placeRef.uri, cid: placeRef.cid },
+      text: review.text,
+      rating: review.rating,
+      vibes: review.vibes,
+      createdAt: nowIso(),
+    };
+    const reviewRef = await createRecord(ids.TownRoundaboutGuideVenueReview, reviewRecord);
+    refMap[refId] = { uri: reviewRef.uri, cid: reviewRef.cid } satisfies StrongRef;
   }
 
   const { text, facets } = documentWire(await tiptapToDocument(draft.doc, refMap));

@@ -9,12 +9,15 @@ import { EventRef } from "./eventRef";
 function renderClass(mark: typeof PlaceRef | typeof EventRef): string {
   const renderHTML = mark.config.renderHTML;
   if (!renderHTML) throw new Error("mark has no renderHTML");
-  // renderHTML returns ["span", attrs, 0]; only HTMLAttributes is consumed.
-  const out = renderHTML({ HTMLAttributes: {}, mark: {} } as never) as [
+  // renderHTML returns ["span", attrs, 0]; only HTMLAttributes is consumed. It
+  // doesn't use `this`, so call it as a plain function (avoids the method's
+  // `this`-context typing) with a minimal props stub.
+  const render = renderHTML as (props: { HTMLAttributes: Record<string, unknown> }) => [
     string,
     Record<string, unknown>,
     number,
   ];
+  const out = render({ HTMLAttributes: {} });
   return String(out[1].class);
 }
 
