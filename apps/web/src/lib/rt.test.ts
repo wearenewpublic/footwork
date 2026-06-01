@@ -18,6 +18,25 @@ const blocks = (hir: any[]) => hir.filter((n) => n.type === "block");
 const blockText = (b: any): string => (b.children ?? []).map((c: any) => c.content ?? "").join("");
 const markKinds = (b: any): string[] => (b.children ?? []).flatMap((c: any) => (c.marks ?? []).map((m: any) => m.kind));
 
+const review = { uri: "at://did:plc:a/town.roundabout.guide.venueReview/v1", cid: "bafyreview" };
+const REVIEW = ids.TownRoundaboutGuideFacet + "#review";
+
+describe("review blocks", () => {
+  it("emits a review block carrying the venueReview ref in attrs", async () => {
+    const json: PMDoc = { type: "doc", content: [
+      { type: "paragraph", content: [{ type: "text", text: "Best spots:" }] },
+      { type: "reviewBlock", attrs: { refId: "review-1", placeName: "Joe's Cafe", rating: 4 } },
+    ] };
+    const hir = hirOf(await tiptapToDocument(json, { "review-1": review }));
+    const bs = blocks(hir);
+    const reviewNode = bs.find((b: any) => b.name === "review");
+    expect(reviewNode).toBeDefined();
+    expect(reviewNode.attrs).toMatchObject({ ref: review, intent: "card" });
+    const para = bs.find((b: any) => b.name === "paragraph");
+    expect((para.children ?? []).map((c: any) => c.content).join("")).toBe("Best spots:");
+  });
+});
+
 describe("tiptapToDocument → HIR", () => {
   it("renders prose into a paragraph block with a place mark on the right span", async () => {
     const json: PMDoc = { type: "doc", content: [{ type: "paragraph", content: [

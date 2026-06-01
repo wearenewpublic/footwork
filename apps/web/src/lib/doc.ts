@@ -11,9 +11,13 @@ export interface PMParagraph {
   type: "paragraph";
   content?: PMTextNode[];
 }
+export interface PMReviewBlock {
+  type: "reviewBlock";
+  attrs: { refId: string; placeName: string; rating: number };
+}
 export interface PMDoc {
   type: "doc";
-  content: PMParagraph[];
+  content: (PMParagraph | PMReviewBlock)[];
 }
 
 /** The plain-text projection of the document: paragraphs joined by blank lines. */
