@@ -56,7 +56,7 @@ export async function tiptapToDocument(json: PMDoc, refMap: RefMap): Promise<Doc
   });
 
   let doc = Document.fromText(text);
-  for (const b of blocks) doc = doc.addBlock(b.start, b.end, { name: "paragraph" });
+  for (const b of blocks) doc = doc.addBlock(b.start, b.end, { name: "paragraph", parents: [] });
   for (const s of spans) doc = doc.addMark(s.byteStart, s.byteEnd, s.mark as any);
   return doc;
 }
