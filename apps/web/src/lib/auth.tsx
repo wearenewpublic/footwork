@@ -3,14 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import { BrowserOAuthClient } from "@atproto/oauth-client-browser";
 import { Agent } from "@atproto/api";
-
-const SCOPE = [
-  "atproto",
-  "repo:town.roundabout.guide.document",
-  "repo:town.roundabout.guide.place",
-  "repo:community.lexicon.calendar.event",
-  "repo:town.roundabout.guide.save",
-].join(" ");
+import { SCOPE } from "./oauth";
 
 interface AuthState {
   agent: Agent | null;
