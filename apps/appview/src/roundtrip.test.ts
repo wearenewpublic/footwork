@@ -66,4 +66,48 @@ describe("round-trip: ingest -> store -> hydrate -> verify -> serve", () => {
     // 5. The verified reference was cached for next time.
     expect(db.getCachedRecord(placeUri)?.record).toEqual(placeValue);
   });
+
+  it("hydrates a review block two hops (facet -> venueReview -> place)", async () => {
+    const db = openDb(":memory:");
+    const placeValue = { $type: ids.TownRoundaboutGuidePlace, name: "Joe's", createdAt: "2026-05-30T00:00:00.000Z" };
+    const placeUri = "at://did:plc:author/" + ids.TownRoundaboutGuidePlace + "/rp1";
+    const placeCid = await cidForRecord(placeValue);
+    const reviewValue = {
+      $type: ids.TownRoundaboutGuideVenueReview,
+      place: { uri: placeUri, cid: placeCid },
+      text: "Great espresso", rating: 4, vibes: ["cozy"],
+      createdAt: "2026-05-30T00:00:00.000Z",
+    };
+    const reviewUri = "at://did:plc:author/" + ids.TownRoundaboutGuideVenueReview + "/rv1";
+    const reviewCid = await cidForRecord(reviewValue);
+
+    const docEvent: CommitEvent = {
+      did: "did:plc:author",
+      collection: ids.TownRoundaboutGuideDocument,
+      rkey: "g2", operation: "create", cid: "bafyguide2",
+      record: {
+        $type: ids.TownRoundaboutGuideDocument, title: "Cafes", type: "list", text: "￼",
+        createdAt: "2026-05-30T00:00:00.000Z",
+        facets: [{ index: { byteStart: 0, byteEnd: 3 }, features: [
+          { $type: ids.TownRoundaboutGuideFacet + "#review", name: "review", parents: [], attrs: { ref: { uri: reviewUri, cid: reviewCid }, intent: "card" } },
+        ] }],
+      },
+    };
+    applyEvent(db, docEvent);
+
+    const fetchRecord = async (uri: string) =>
+      uri === reviewUri ? { cid: reviewCid, value: reviewValue }
+      : uri === placeUri ? { cid: placeCid, value: placeValue }
+      : null;
+    const resolveActorFn = async (did: string) => ({ did, handle: "author.test", pds: "https://pds.example" });
+    const api = createApi({ db, fetchRecord, resolveActorFn });
+
+    const res = await api.request("/guide/did:plc:author/g2");
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.references[reviewUri].verified).toBe(true);
+    expect(body.references[reviewUri].value.rating).toBe(4);
+    expect(body.references[placeUri].verified).toBe(true);
+    expect(body.references[placeUri].value.name).toBe("Joe's");
+  });
 });
