@@ -60,3 +60,25 @@ h1 {
   border-radius: 0.5rem;
   padding: 0.75rem;
 }
+
+/* venueReview block card (viewer) */
+.review-card {
+  border: 1px solid #e2e2e2;
+  border-radius: 0.6rem;
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  background: #fafafa;
+}
+.review-card-editor { color: #444; font-style: normal; }
+.review-card-head { display: flex; align-items: baseline; gap: 0.6rem; }
+.review-stars { color: #e0a106; letter-spacing: 0.05em; }
+.review-place { font-weight: 600; }
+.review-text { margin: 0.4rem 0 0; }
+.review-vibes { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; }
+.review-vibe {
+  font-size: 0.8rem;
+  background: #eef1f5;
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  color: #445;
+}

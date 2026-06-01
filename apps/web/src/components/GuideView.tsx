@@ -32,6 +32,32 @@ function chip(kind: "place" | "event", refs: Record<string, ResolvedRef>) {
   };
 }
 
+function reviewCard(refs: Record<string, ResolvedRef>) {
+  return function ReviewCard({ attrs }: MarkProps) {
+    const ref = attrs.ref as { uri?: string } | undefined;
+    const review = ref?.uri ? refs[ref.uri]?.value : null;
+    if (!review) return null;
+    const rating = Number(review.rating) || 0;
+    const stars = "★".repeat(rating) + "☆".repeat(Math.max(0, 5 - rating));
+    const placeRef = review.place as { uri?: string } | undefined;
+    const place = placeRef?.uri ? refs[placeRef.uri]?.value : null;
+    const placeName = (place?.name as string) ?? null;
+    const vibes = Array.isArray(review.vibes) ? (review.vibes as string[]) : [];
+    return (
+      <div className="review-card">
+        <div className="review-card-head">
+          <span className="review-stars" aria-label={`${rating} out of 5`}>{stars}</span>
+          {placeName && <span className="review-place">{placeName}</span>}
+        </div>
+        {review.text ? <p className="review-text">{String(review.text)}</p> : null}
+        {vibes.length > 0 && (
+          <div className="review-vibes">{vibes.map((v) => <span key={v} className="review-vibe">{v}</span>)}</div>
+        )}
+      </div>
+    );
+  };
+}
+
 export async function GuideView({ guide }: { guide: HydratedGuide }) {
   await ensureInit();
   const wire = {
@@ -45,6 +71,7 @@ export async function GuideView({ guide }: { guide: HydratedGuide }) {
     link: Anchor,
     place: chip("place", guide.references),
     event: chip("event", guide.references),
+    review: reviewCard(guide.references),
   };
   return <DocumentRenderer hir={hir} components={components} />;
 }
