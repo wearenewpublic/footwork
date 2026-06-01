@@ -521,6 +521,7 @@ export const schemaDict = {
               maxLength: 8,
               items: {
                 type: 'string',
+                minLength: 1,
                 maxLength: 256,
                 maxGraphemes: 64,
               },

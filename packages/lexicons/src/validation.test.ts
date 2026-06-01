@@ -71,4 +71,16 @@ describe("venueReview", () => {
       lexicons.assertValidRecord(ids.TownRoundaboutGuideVenueReview, { ...base, vibes: Array(9).fill("x") }),
     ).toThrow();
   });
+
+  it("rejects an empty-string vibe tag", () => {
+    expect(() =>
+      lexicons.assertValidRecord(ids.TownRoundaboutGuideVenueReview, { ...base, vibes: [""] }),
+    ).toThrow();
+  });
+
+  it("rejects a vibe tag exceeding 256 characters", () => {
+    expect(() =>
+      lexicons.assertValidRecord(ids.TownRoundaboutGuideVenueReview, { ...base, vibes: ["x".repeat(257)] }),
+    ).toThrow();
+  });
 });
