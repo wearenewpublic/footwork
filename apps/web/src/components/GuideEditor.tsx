@@ -5,6 +5,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { PlaceRef } from "../lib/tiptap/placeRef";
 import { EventRef } from "../lib/tiptap/eventRef";
 import { ReviewBlock } from "../lib/tiptap/reviewBlock";
+import { AttachHighlight } from "../lib/tiptap/attachHighlight";
 import { CreatePlacePopup } from "./CreatePlacePopup";
 import { CreateEventPopup } from "./CreateEventPopup";
 import { CreateReviewPopup } from "./CreateReviewPopup";
@@ -29,7 +30,7 @@ export function GuideEditor({
   const [, setRev] = useState(0);
 
   const editor = useEditor({
-    extensions: [StarterKit, PlaceRef, EventRef, ReviewBlock],
+    extensions: [StarterKit, PlaceRef, EventRef, ReviewBlock, AttachHighlight],
     content: "<p></p>",
     immediatelyRender: false,
     onSelectionUpdate: () => setRev((r) => r + 1),
@@ -43,6 +44,7 @@ export function GuideEditor({
     setCounter((c) => c + 1);
     setPlaces((m) => ({ ...m, [refId]: p }));
     editor.chain().focus().setMark("placeRef", { refId, intent: "card" }).run();
+    editor.commands.clearAttachHighlight();
     setPopup("none");
   };
   const addEvent = (e: EventPayload) => {
@@ -50,6 +52,7 @@ export function GuideEditor({
     setCounter((c) => c + 1);
     setEvents((m) => ({ ...m, [refId]: e }));
     editor.chain().focus().setMark("eventRef", { refId, intent: "card" }).run();
+    editor.commands.clearAttachHighlight();
     setPopup("none");
   };
   const addReview = (r: ReviewPayload) => {
@@ -63,18 +66,28 @@ export function GuideEditor({
     setPopup("none");
   };
 
+  const openWithHighlight = (which: "place" | "event") => {
+    const { from, to } = editor.state.selection;
+    editor.commands.setAttachHighlight({ from, to });
+    setPopup(which);
+  };
+  const closePopup = () => {
+    editor.commands.clearAttachHighlight();
+    setPopup("none");
+  };
+
   return (
     <div>
       <div className="toolbar">
         <button onClick={() => editor.chain().focus().toggleBold().run()}>Bold</button>
         <button onClick={() => editor.chain().focus().toggleItalic().run()}>Italic</button>
-        <button onClick={() => setPopup("place")} disabled={editor.state.selection.empty}>Add place</button>
-        <button onClick={() => setPopup("event")} disabled={editor.state.selection.empty}>Add event</button>
+        <button onClick={() => openWithHighlight("place")} disabled={editor.state.selection.empty}>Add place</button>
+        <button onClick={() => openWithHighlight("event")} disabled={editor.state.selection.empty}>Add event</button>
         <button onClick={() => setPopup("review")}>Add review</button>
       </div>
       <EditorContent editor={editor} />
-      {popup === "place" && <CreatePlacePopup onSubmit={addPlace} onCancel={() => setPopup("none")} />}
-      {popup === "event" && <CreateEventPopup onSubmit={addEvent} onCancel={() => setPopup("none")} />}
+      {popup === "place" && <CreatePlacePopup onSubmit={addPlace} onCancel={closePopup} />}
+      {popup === "event" && <CreateEventPopup onSubmit={addEvent} onCancel={closePopup} />}
       {popup === "review" && <CreateReviewPopup onSubmit={addReview} onCancel={() => setPopup("none")} />}
       <button onClick={() => onPublish(editor.getJSON() as PMDoc, places, events, reviews)}>Publish</button>
     </div>
