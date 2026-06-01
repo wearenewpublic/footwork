@@ -18,6 +18,10 @@ Guide: `at://did:plc:3vdrgzr2zybocs45yfhcr6ur/town.roundabout.guide.document/3mn
 
 The first attempt rendered **blank**: `rt.ts` built blocks by joining paragraphs with literal `\n\n` and faceting content ranges. relationaltext blocks instead use a single **sentinel marker char per block** (`￼` for the first block, `\n` for subsequent), with the block facet covering only the marker and content following it. `toHIR` therefore mis-extracted (blocks held the separators; the prose was dropped). Fixed `rt.ts` to emit markers + facet only the marker char; `rt.test.ts` now asserts the prose lands in paragraph blocks via `toHIR` (would have caught it). Also stripped block markers from the OG/description metadata.
 
+## Known limitation (accepted for the spike)
+
+When an entity (place/event) **partially overlaps** an inline format span (e.g. italic on only part of a referenced phrase), the chip renders as **two adjacent pills** instead of one chip with the formatting nested inside. Cause: `toHIR` emits flat per-segment marks, and `relational-text-react`'s `DocumentRenderer` wraps each text node's marks independently (no cross-node coalescing/nesting), so the entity splits at the format boundary. Registering the vocabulary as `featureClass: "entity"` does not change `toHIR`'s flat output. This is an upstream-renderer gap; partial entity/format overlap is rare in practice, so it's left as-is rather than hand-rolling a nesting renderer. Follow-up: a coalescing/nesting inline renderer (or an upstream fix) would resolve it.
+
 ## Net result
 
 Guides are now first-class relationaltext documents using the library's tested model, HIR, and React renderer — no hand-rolled rich-text stack. place/event remain our own entity vocabulary. The AppView is unchanged (ref-keyed hydration). This completes the five-plan spike: Foundation → AppView → Editor (write) → Editor (UI) → Viewer (relationaltext).
