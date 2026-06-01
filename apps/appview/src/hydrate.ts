@@ -18,10 +18,29 @@ export function refsFromDocument(record: Record<string, unknown>): RefSpec[] {
   const facets = (record.facets as any[]) ?? [];
   for (const facet of facets) {
     for (const feature of facet.features ?? []) {
-      const ref = feature?.ref as { uri?: string; cid?: string } | undefined;
+      // Marks carry `ref` top-level; block features (e.g. review) carry it under attrs.
+      const ref = (feature?.ref ?? feature?.attrs?.ref) as { uri?: string; cid?: string } | undefined;
       if (ref?.uri && ref?.cid) out.push({ uri: ref.uri, expectedCid: ref.cid });
     }
   }
+  return out;
+}
+
+/** Find every strongRef-shaped object ({uri, cid}) nested anywhere in a value. */
+export function strongRefsInValue(value: unknown): RefSpec[] {
+  const out: RefSpec[] = [];
+  const visit = (v: unknown) => {
+    if (Array.isArray(v)) { v.forEach(visit); return; }
+    if (v && typeof v === "object") {
+      const o = v as Record<string, unknown>;
+      if (typeof o.uri === "string" && typeof o.cid === "string") {
+        out.push({ uri: o.uri, expectedCid: o.cid });
+        return; // a strongRef is a leaf
+      }
+      for (const k of Object.keys(o)) visit(o[k]);
+    }
+  };
+  visit(value);
   return out;
 }
 
@@ -56,17 +75,25 @@ async function resolveRef(
   };
 }
 
-/** Assemble a fully hydrated guide view. */
+/** Assemble a fully hydrated guide view, following nested strongRefs up to any depth. */
 export async function hydrateGuide(
   db: Db,
   doc: DocumentRow,
   fetchRecord: FetchRecord,
   author: Actor,
 ): Promise<HydratedGuide> {
-  const specs = refsFromDocument(doc.record);
   const references: Record<string, ResolvedRef> = {};
-  for (const spec of specs) {
-    references[spec.uri] = await resolveRef(db, spec, fetchRecord);
+  const queue = refsFromDocument(doc.record);
+  while (queue.length > 0) {
+    const spec = queue.shift()!;
+    if (references[spec.uri]) continue; // visited (also breaks cycles)
+    const resolved = await resolveRef(db, spec, fetchRecord);
+    references[spec.uri] = resolved;
+    if (resolved.value) {
+      for (const nested of strongRefsInValue(resolved.value)) {
+        if (!references[nested.uri]) queue.push(nested);
+      }
+    }
   }
   return { uri: doc.uri, cid: doc.cid, author, record: doc.record, references };
 }

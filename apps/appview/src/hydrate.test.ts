@@ -82,4 +82,43 @@ describe("hydration", () => {
     expect(view.references[placeUri].verified).toBe(true);
     expect(calls).toBe(0);
   });
+
+  it("resolves a review block two hops: facet -> venueReview -> place", async () => {
+    const db = openDb(":memory:");
+    const rPlaceValue = { $type: ids.TownRoundaboutGuidePlace, name: "Joe's", createdAt: "2026-01-01T00:00:00Z" };
+    const rPlaceUri = "at://did:plc:a/" + ids.TownRoundaboutGuidePlace + "/rp1";
+    const rPlaceCid = await cidForRecord(rPlaceValue);
+    const reviewValue = {
+      $type: ids.TownRoundaboutGuideVenueReview,
+      place: { uri: rPlaceUri, cid: rPlaceCid },
+      text: "Great espresso", rating: 4, vibes: ["cozy"],
+      createdAt: "2026-01-01T00:00:00Z",
+    };
+    const reviewUri = "at://did:plc:a/" + ids.TownRoundaboutGuideVenueReview + "/rv1";
+    const reviewCid = await cidForRecord(reviewValue);
+
+    const doc: DocumentRow = {
+      uri: "at://did:plc:a/" + ids.TownRoundaboutGuideDocument + "/2",
+      cid: "bafydoc", did: "did:plc:a", rkey: "2",
+      record: {
+        $type: ids.TownRoundaboutGuideDocument, title: "Cafes", text: "￼",
+        createdAt: "2026-01-01T00:00:00Z",
+        facets: [{ index: { byteStart: 0, byteEnd: 3 }, features: [
+          { $type: ids.TownRoundaboutGuideFacet + "#review", name: "review", parents: [], attrs: { ref: { uri: reviewUri, cid: reviewCid }, intent: "card" } },
+        ] }],
+      },
+    };
+
+    const fetchRecord = async (uri: string) =>
+      uri === reviewUri ? { cid: reviewCid, value: reviewValue }
+      : uri === rPlaceUri ? { cid: rPlaceCid, value: rPlaceValue }
+      : null;
+
+    const view = await hydrateGuide(db, doc, fetchRecord, { did: "did:plc:a", handle: null, pds: null });
+
+    expect(view.references[reviewUri].verified).toBe(true);
+    expect(view.references[reviewUri].value).toEqual(reviewValue);
+    expect(view.references[rPlaceUri].verified).toBe(true);
+    expect((view.references[rPlaceUri].value as any).name).toBe("Joe's");
+  });
 });
