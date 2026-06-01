@@ -44,6 +44,8 @@ export const AttachHighlight = Extension.create({
         state: {
           init: () => null,
           apply(tr, value) {
+            // A set/clear command dispatches a meta-only transaction (no doc change),
+            // so meta and docChanged never coincide here; precedence is moot in practice.
             const meta = tr.getMeta(attachHighlightKey) as Meta | undefined;
             if (meta?.type === "set") return attachHighlightApply(value, { type: "set", range: meta.range });
             if (meta?.type === "clear") return attachHighlightApply(value, { type: "clear" });
