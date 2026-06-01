@@ -37,7 +37,7 @@ function reviewCard(refs: Record<string, ResolvedRef>) {
     const ref = attrs.ref as { uri?: string } | undefined;
     const review = ref?.uri ? refs[ref.uri]?.value : null;
     if (!review) return null;
-    const rating = Number(review.rating) || 0;
+    const rating = Math.min(5, Math.max(0, Number(review.rating) || 0));
     const stars = "★".repeat(rating) + "☆".repeat(Math.max(0, 5 - rating));
     const placeRef = review.place as { uri?: string } | undefined;
     const place = placeRef?.uri ? refs[placeRef.uri]?.value : null;
@@ -51,7 +51,7 @@ function reviewCard(refs: Record<string, ResolvedRef>) {
         </div>
         {review.text ? <p className="review-text">{String(review.text)}</p> : null}
         {vibes.length > 0 && (
-          <div className="review-vibes">{vibes.map((v) => <span key={v} className="review-vibe">{v}</span>)}</div>
+          <div className="review-vibes">{vibes.map((v, i) => <span key={`${i}-${v}`} className="review-vibe">{v}</span>)}</div>
         )}
       </div>
     );
