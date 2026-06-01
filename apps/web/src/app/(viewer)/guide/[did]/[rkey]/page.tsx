@@ -15,7 +15,12 @@ export async function generateMetadata({
   const guide = await fetchGuide(did, rkey);
   if (!guide) return { title: "Guide not found" };
   const title = String(guide.record.title ?? "Guide");
-  const description = String(guide.record.text ?? "").slice(0, 200);
+  // Strip relationaltext block markers (U+FFFC first-block, \n subsequent) for a clean description.
+  const description = String(guide.record.text ?? "")
+    .replace(/￼/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 200);
   const canonical = `/guide/${did}/${rkey}`;
   return {
     title,
