@@ -1,9 +1,9 @@
-import type { PMDoc } from "./doc";
+import type { PMDoc, PMParagraph } from "./doc";
 import type { Draft, PlacePayload, EventPayload } from "./publish";
 
 function referencedRefIds(doc: PMDoc): string[] {
   const out: string[] = [];
-  for (const para of doc.content) {
+  for (const para of doc.content.filter((n): n is PMParagraph => n.type === "paragraph")) {
     for (const node of para.content ?? []) {
       for (const mark of node.marks ?? []) {
         if ((mark.type === "placeRef" || mark.type === "eventRef") && mark.attrs?.refId) {

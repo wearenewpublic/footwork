@@ -35,6 +35,18 @@ describe("review blocks", () => {
     const para = bs.find((b: any) => b.name === "paragraph");
     expect((para.children ?? []).map((c: any) => c.content).join("")).toBe("Best spots:");
   });
+
+  it("falls back to a plain paragraph (no leaked marker) when the review ref is unresolved", async () => {
+    const json: PMDoc = { type: "doc", content: [
+      { type: "reviewBlock", attrs: { refId: "missing", placeName: "X", rating: 3 } },
+    ] };
+    const hir = hirOf(await tiptapToDocument(json, {}));
+    const bs = blocks(hir);
+    expect(bs.find((b: any) => b.name === "review")).toBeUndefined();
+    // the marker is consumed by a paragraph block, not rendered as visible text
+    const text = bs.flatMap((b: any) => b.children ?? []).map((c: any) => c.content ?? "").join("");
+    expect(text).toBe("");
+  });
 });
 
 describe("tiptapToDocument → HIR", () => {

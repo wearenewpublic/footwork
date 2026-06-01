@@ -23,6 +23,7 @@ export interface PMDoc {
 /** The plain-text projection of the document: paragraphs joined by blank lines. */
 export function paragraphsText(doc: PMDoc): string {
   return doc.content
-    .map((p) => (p.content ?? []).map((n) => n.text).join(""))
+    .filter((n): n is PMParagraph => n.type === "paragraph")
+    .map((p) => (p.content ?? []).map((node) => node.text).join(""))
     .join("\n\n");
 }

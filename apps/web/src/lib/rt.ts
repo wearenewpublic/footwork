@@ -88,7 +88,7 @@ export async function tiptapToDocument(json: PMDoc, refMap: RefMap): Promise<Doc
       name: "review",
       parents: [],
       attrs: { ref: r.ref, intent: "card" },
-    } as any);
+    });
   }
   for (const s of spans) doc = doc.addMark(s.byteStart, s.byteEnd, s.mark as any);
   return doc;
