@@ -15,6 +15,7 @@
     "build": "tsc -p tsconfig.json",
     "prepare": "tsc -p tsconfig.json",
     "gen": "lex gen-api ./src/lexicon $(find lexicons -name '*.json') && rm -f src/lexicon/index.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest"
   },

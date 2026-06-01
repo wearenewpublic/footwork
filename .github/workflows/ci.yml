@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel superseded runs on the same ref (e.g. rapid pushes to a PR branch).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.1
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # Builds native deps (better-sqlite3, esbuild — allowlisted via
+      # pnpm-workspace.yaml `onlyBuiltDependencies`) and runs @guides/lexicons'
+      # `prepare` hook to compile its dist/ (consumed by appview + web).
+      # Lexicon TS sources are committed, so the interactive `pnpm gen` is not needed.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test
+        run: pnpm -r test
+
+      - name: Typecheck
+        run: pnpm -r typecheck
+
+      # next build also runs the web app's TypeScript typecheck.
+      - name: Build web
+        run: pnpm --filter @guides/web build
