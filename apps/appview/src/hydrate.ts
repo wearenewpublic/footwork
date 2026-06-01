@@ -7,7 +7,7 @@ export type FetchRecord = (
   uri: string,
 ) => Promise<{ cid: string; value: Record<string, unknown> } | null>;
 
-interface RefSpec {
+export interface RefSpec {
   uri: string;
   expectedCid: string;
 }

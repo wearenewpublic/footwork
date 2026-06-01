@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { openDb } from "./db";
-import { hydrateGuide, refsFromDocument } from "./hydrate";
+import { hydrateGuide, refsFromDocument, strongRefsInValue } from "./hydrate";
 import { cidForRecord } from "./cid";
 import { ids } from "@guides/lexicons";
 import type { DocumentRow } from "./db";
@@ -120,5 +120,34 @@ describe("hydration", () => {
     expect(view.references[reviewUri].value).toEqual(reviewValue);
     expect(view.references[rPlaceUri].verified).toBe(true);
     expect((view.references[rPlaceUri].value as any).name).toBe("Joe's");
+  });
+});
+
+describe("strongRefsInValue", () => {
+  it("finds a nested strongRef and stops at the ref boundary", () => {
+    const value = {
+      $type: "town.roundabout.guide.venueReview",
+      place: { uri: "at://x/place/1", cid: "bafyplace" },
+      rating: 4,
+    };
+    expect(strongRefsInValue(value)).toEqual([{ uri: "at://x/place/1", expectedCid: "bafyplace" }]);
+  });
+
+  it("collects strongRefs from arrays and ignores non-ref objects", () => {
+    const value = {
+      items: [
+        { uri: "at://x/a/1", cid: "bafya" },
+        { note: "not a ref" },
+        { uri: "at://x/b/2", cid: "bafyb" },
+      ],
+    };
+    expect(strongRefsInValue(value)).toEqual([
+      { uri: "at://x/a/1", expectedCid: "bafya" },
+      { uri: "at://x/b/2", expectedCid: "bafyb" },
+    ]);
+  });
+
+  it("returns nothing for a value with no strongRefs", () => {
+    expect(strongRefsInValue({ name: "Joe's", rating: 5, tags: ["a", "b"] })).toEqual([]);
   });
 });
