@@ -40,6 +40,10 @@ describe("mapAutocomplete (defensive: place id + label)", () => {
   it("returns [] for a non-array body", () => {
     expect(mapAutocomplete({})).toEqual([]);
   });
+  it("tolerates null/odd elements in results", () => {
+    const json = { results: [null, "weird", { place: { fsq_place_id: "p9", name: "Joe's" }, text: { secondary: "1 Main St" } }] };
+    expect(mapAutocomplete(json)).toEqual([{ fsqPlaceId: "p9", name: "Joe's", formatted: "1 Main St" }]);
+  });
 });
 
 describe("mapDetails + detailsToPayload", () => {
