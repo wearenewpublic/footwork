@@ -101,3 +101,17 @@ h1 {
 }
 .nav a { text-decoration: none; color: #1a56c4; }
 .nav .nav-brand { font-weight: 700; color: #1a1a1a; margin-right: auto; }
+
+/* Foursquare place search */
+.place-search { position: relative; }
+.place-search input { width: 100%; }
+.place-suggestions { list-style: none; margin: 0.25rem 0; padding: 0; border: 1px solid #ddd; border-radius: 0.4rem; }
+.place-suggestions li { border-bottom: 1px solid #f0f0f0; }
+.place-suggestions li:last-child { border-bottom: none; }
+.place-suggestions button { display: block; width: 100%; text-align: left; padding: 0.4rem 0.6rem; background: none; border: none; cursor: pointer; }
+.place-suggestions button:hover { background: #f5f7fa; }
+.place-name { font-weight: 600; }
+.place-formatted { color: #666; font-size: 0.9rem; }
+.place-selected { display: flex; align-items: baseline; gap: 0.6rem; }
+.place-error { color: #b3245a; font-size: 0.85rem; }
+.place-attribution { color: #999; font-size: 0.75rem; margin: 0.3rem 0 0; }
