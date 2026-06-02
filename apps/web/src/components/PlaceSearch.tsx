@@ -20,18 +20,21 @@ export function PlaceSearch({ onSelect }: { onSelect: (p: PlacePayload | null) =
     if (selected) return;
     const q = query.trim();
     if (q.length < 3) { setSuggestions([]); return; }
+    let cancelled = false;
     const t = setTimeout(async () => {
       try {
         const res = await fetch(`/api/places/autocomplete?q=${encodeURIComponent(q)}&session=${session.current}`);
+        if (cancelled) return;
         if (!res.ok) { setError("search unavailable"); setSuggestions([]); return; }
         const body = (await res.json()) as { results: Suggestion[] };
+        if (cancelled) return;
         setError(null);
         setSuggestions(body.results ?? []);
       } catch {
-        setError("search unavailable"); setSuggestions([]);
+        if (!cancelled) { setError("search unavailable"); setSuggestions([]); }
       }
     }, 250);
-    return () => clearTimeout(t);
+    return () => { clearTimeout(t); cancelled = true; };
   }, [query, selected]);
 
   const pick = async (s: Suggestion) => {

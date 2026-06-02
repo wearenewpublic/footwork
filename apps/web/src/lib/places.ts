@@ -13,8 +13,9 @@ export function autocompleteUrl(query: string, session: string): string {
   return `${FSQ_BASE}/autocomplete?${p.toString()}`;
 }
 
-export function detailsUrl(fsqPlaceId: string): string {
+export function detailsUrl(fsqPlaceId: string, session?: string): string {
   const p = new URLSearchParams({ fields: "fsq_place_id,name,latitude,longitude,location" });
+  if (session) p.set("session_token", session);
   return `${FSQ_BASE}/places/${encodeURIComponent(fsqPlaceId)}?${p.toString()}`;
 }
 

@@ -18,6 +18,12 @@ describe("places request builders", () => {
     expect(u.searchParams.get("fields")).toBe("fsq_place_id,name,latitude,longitude,location");
   });
 
+  it("includes the session token in the details URL when provided", () => {
+    const u = new URL(detailsUrl("p1", "sess123"));
+    expect(u.searchParams.get("session_token")).toBe("sess123");
+    expect(u.searchParams.get("fields")).toBe("fsq_place_id,name,latitude,longitude,location");
+  });
+
   it("sets bearer auth + version header", () => {
     expect(fsqHeaders("KEY")).toEqual({
       Authorization: "Bearer KEY",
