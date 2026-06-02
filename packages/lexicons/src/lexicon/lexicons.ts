@@ -448,12 +448,15 @@ export const schemaDict = {
               maxGraphemes: 300,
             },
             location: {
-              type: 'union',
-              refs: [
-                'lex:community.lexicon.location.address',
-                'lex:community.lexicon.location.geo',
-                'lex:community.lexicon.location.fsq',
-              ],
+              type: 'array',
+              items: {
+                type: 'union',
+                refs: [
+                  'lex:community.lexicon.location.address',
+                  'lex:community.lexicon.location.geo',
+                  'lex:community.lexicon.location.fsq',
+                ],
+              },
             },
             createdAt: {
               type: 'string',

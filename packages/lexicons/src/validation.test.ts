@@ -84,3 +84,19 @@ describe("venueReview", () => {
     ).toThrow();
   });
 });
+
+describe("place location array", () => {
+  const geo = { $type: ids.CommunityLexiconLocationGeo, latitude: "37.76", longitude: "-122.42", name: "Tartine" };
+  const addr = { $type: ids.CommunityLexiconLocationAddress, country: "US", region: "CA", locality: "San Francisco", street: "600 Guerrero St", postalCode: "94110", name: "Tartine" };
+  const fsq = { $type: ids.CommunityLexiconLocationFsq, fsq_place_id: "abc123", latitude: "37.76", longitude: "-122.42", name: "Tartine" };
+
+  it("accepts a place with multiple location encodings", () => {
+    const rec = { $type: ids.TownRoundaboutGuidePlace, name: "Tartine", location: [geo, addr, fsq], createdAt: "2026-06-02T00:00:00.000Z" };
+    expect(() => lexicons.assertValidRecord(ids.TownRoundaboutGuidePlace, rec)).not.toThrow();
+  });
+
+  it("accepts a place with no location", () => {
+    const rec = { $type: ids.TownRoundaboutGuidePlace, name: "Somewhere", createdAt: "2026-06-02T00:00:00.000Z" };
+    expect(() => lexicons.assertValidRecord(ids.TownRoundaboutGuidePlace, rec)).not.toThrow();
+  });
+});
