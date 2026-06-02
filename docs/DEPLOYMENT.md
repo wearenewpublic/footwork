@@ -83,3 +83,34 @@ If sign-in fails, the usual causes are: a non-HTTPS origin, `client_id` not
 matching the fetched URL (proxy origin mismatch — set `OAUTH_CLIENT_ORIGIN`),
 or a requested scope exceeding the published one (shouldn't happen — both come
 from `SCOPE` in `oauth.ts`).
+
+## Place search (Foursquare)
+
+The editor's place search proxies the **Foursquare Places API** server-side
+(`apps/web/src/app/api/places/{autocomplete,details}`). We use Foursquare —
+backed by the open-licensed Open Source Places dataset — rather than Google,
+because Google's Maps Platform terms forbid storing Places content (name /
+address / lat-lng) in public, permanent atproto records rendered on non-Google
+maps; Foursquare's data is storable and redistributable, and the community
+`fsq` location lexicon models it.
+
+Set **`FOURSQUARE_API_KEY`** (a Foursquare Places *Service* key) as a
+**server-only** env var — never in the client bundle:
+
+- **Local:** `apps/web/.env.local` (gitignored):
+  ```
+  FOURSQUARE_API_KEY=<your-key>
+  ```
+- **Sprite:** set it on the `web` service env. When (re)creating the service:
+  ```
+  sprite-env services create web --cmd /home/sprite/footwork/scripts/run-web.sh \
+    --http-port 8080 --needs appview --env FOURSQUARE_API_KEY=<your-key>
+  ```
+  (or add it to `scripts/run-web.sh` as an exported var). Restart the `web`
+  service after changing it.
+
+Get a key at the [Foursquare developer portal](https://docs.foursquare.com/)
+(create an account → a project → a Places Service API key). Without the key,
+`/api/places/*` return `503` and the editor's search box shows "search
+unavailable" — the rest of the app is unaffected. Attribution ("Powered by
+Foursquare") is shown in the search UI.
