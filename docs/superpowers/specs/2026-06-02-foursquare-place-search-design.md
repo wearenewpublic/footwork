@@ -126,3 +126,27 @@ license permits storing and redistributing the place data in public records.
   stored to enable it later).
 - Backfilling/migrating existing single-`location` place records.
 - Client-side Foursquare calls (key stays server-side).
+
+## Revision (2026-06-03) — manual "near" via Place Search
+
+Live verification revealed Foursquare **autocomplete ignores a textual location**
+and returns ~nothing for specific venue names without an `ll` coordinate bias
+(e.g. "blue bottle coffee" → 0 results un-biased, 8 with `ll`). Rather than
+prompt for browser geolocation, we use a **manual "near" field** (user decision)
+— and the **Place Search** endpoint (`/places/search?query=&near=<text>`), which
+*does* accept a textual `near` and returns full place objects (fsq_place_id,
+name, latitude, longitude, location incl. formatted_address) in one call.
+
+Changes from the original design:
+- Endpoint: `/autocomplete` + `/places/{id}` (+ session token) → a single
+  **`/places/search?query=&near=&fields=fsq_place_id,name,latitude,longitude,location&limit=8`**.
+  No session token (search isn't session-billed like autocomplete).
+- Proxy: one route `GET /api/places/search?q=&near=` (replaces the autocomplete +
+  details routes). Returns `{ results: { name, formatted, payload }[] }` where
+  `payload` is the full `PlacePayload` (each result reuses `mapDetails` +
+  `detailsToPayload`, since a search result has the same shape as a details
+  response). `formatted` = `location.formatted_address`.
+- UX: `PlaceSearch` gains a **"near"** input (city/area) alongside the query;
+  results show name + formatted address; on pick → `onSelect(payload)`. No
+  geolocation permission.
+- The `geo`+`address`+`fsq` persistence and the lexicon array are unchanged.
