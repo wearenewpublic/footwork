@@ -20,11 +20,12 @@ const id = 'town.roundabout.guide.place'
 export interface Main {
   $type: 'town.roundabout.guide.place'
   name: string
-  location?:
+  location?: (
     | $Typed<CommunityLexiconLocationAddress.Main>
     | $Typed<CommunityLexiconLocationGeo.Main>
     | $Typed<CommunityLexiconLocationFsq.Main>
     | { $type: string }
+  )[]
   createdAt: string
   [k: string]: unknown
 }

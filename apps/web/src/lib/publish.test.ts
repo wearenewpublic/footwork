@@ -20,7 +20,7 @@ function draftWithPlace(): Draft {
     title: "Mission morning",
     type: "list",
     doc,
-    places: { "place-1": { name: "Tartine", location: { $type: ids.CommunityLexiconLocationGeo, latitude: "37.76", longitude: "-122.42" } } },
+    places: { "place-1": { name: "Tartine", location: [{ $type: ids.CommunityLexiconLocationGeo, latitude: "37.76", longitude: "-122.42", name: "Tartine" }] } },
     events: {},
     reviews: {},
   };
@@ -38,6 +38,9 @@ describe("publishGuide", () => {
     expect(result).toBe("at://did:plc:me/" + ids.TownRoundaboutGuideDocument + "/g1");
     expect(createRecord.mock.calls[0][0]).toBe(ids.TownRoundaboutGuidePlace);
     expect(createRecord.mock.calls[0][1].name).toBe("Tartine");
+    expect(createRecord.mock.calls[0][1].location).toEqual([
+      { $type: ids.CommunityLexiconLocationGeo, latitude: "37.76", longitude: "-122.42", name: "Tartine" },
+    ]);
     const docCall = createRecord.mock.calls[1];
     expect(docCall[0]).toBe(ids.TownRoundaboutGuideDocument);
     const docRecord = docCall[1];

@@ -2,9 +2,12 @@ import { ids, lexicons, type StrongRef } from "@guides/lexicons";
 import type { PMDoc } from "./doc";
 import { tiptapToDocument, documentWire, type RefMap } from "./rt";
 
+/** A community.lexicon.location.* object (geo/address/fsq), tagged by $type. */
+export type LocationEncoding = { $type: string } & Record<string, unknown>;
+
 export interface PlacePayload {
   name: string;
-  location?: Record<string, unknown>;
+  location?: LocationEncoding[];
 }
 export interface EventPayload {
   name: string;
@@ -35,7 +38,9 @@ function nowIso(): string {
 }
 
 function makePlaceRecord(p: PlacePayload): Record<string, unknown> {
-  return { $type: ids.TownRoundaboutGuidePlace, name: p.name, location: p.location, createdAt: nowIso() };
+  const rec: Record<string, unknown> = { $type: ids.TownRoundaboutGuidePlace, name: p.name, createdAt: nowIso() };
+  if (p.location && p.location.length > 0) rec.location = p.location;
+  return rec;
 }
 
 export async function publishGuide(repo: string, createRecord: CreateRecord, draft: Draft): Promise<string> {
