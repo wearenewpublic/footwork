@@ -34,6 +34,7 @@ describe("mapSearch", () => {
     ] };
     const out = mapSearch(json);
     expect(out).toHaveLength(1);
+    expect(out[0].fsqPlaceId).toBe("p1");
     expect(out[0].name).toBe("Blue Bottle Coffee");
     expect(out[0].formatted).toBe("315 Linden St, San Francisco, CA 94102");
     expect(out[0].payload.location?.map((l) => l.$type)).toEqual([

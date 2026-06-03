@@ -15,6 +15,7 @@ export function searchUrl(query: string, near?: string): string {
 }
 
 export interface SearchResult {
+  fsqPlaceId: string;
   name: string;
   formatted: string;
   payload: PlacePayload;
@@ -26,7 +27,7 @@ export function mapSearch(json: unknown): SearchResult[] {
   return (results as Record<string, any>[]).map((raw) => {
     const d = mapDetails(raw);
     const formatted = String(raw?.location?.formatted_address ?? "");
-    return { name: d.name, formatted, payload: detailsToPayload(d) };
+    return { fsqPlaceId: d.fsqPlaceId, name: d.name, formatted, payload: detailsToPayload(d) };
   });
 }
 

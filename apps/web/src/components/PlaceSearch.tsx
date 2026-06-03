@@ -59,7 +59,7 @@ export function PlaceSearch({ onSelect }: { onSelect: (p: PlacePayload | null) =
       {results.length > 0 && (
         <ul className="place-suggestions">
           {results.map((r, i) => (
-            <li key={`${r.payload.name}-${i}`}>
+            <li key={r.fsqPlaceId || `${r.name}-${i}`}>
               <button type="button" onClick={() => pick(r)}>
                 <span className="place-name">{r.name}</span>
                 {r.formatted && <span className="place-formatted"> — {r.formatted}</span>}
