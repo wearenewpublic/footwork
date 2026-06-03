@@ -8,37 +8,26 @@ export function fsqHeaders(apiKey: string): Record<string, string> {
   return { Authorization: `Bearer ${apiKey}`, "X-Places-Api-Version": FSQ_API_VERSION, Accept: "application/json" };
 }
 
-export function autocompleteUrl(query: string, session: string): string {
-  const p = new URLSearchParams({ query, types: "place", session_token: session, limit: "8" });
-  return `${FSQ_BASE}/autocomplete?${p.toString()}`;
+export function searchUrl(query: string, near?: string): string {
+  const p = new URLSearchParams({ query, fields: "fsq_place_id,name,latitude,longitude,location", limit: "8" });
+  if (near && near.trim()) p.set("near", near.trim());
+  return `${FSQ_BASE}/places/search?${p.toString()}`;
 }
 
-export function detailsUrl(fsqPlaceId: string, session?: string): string {
-  const p = new URLSearchParams({ fields: "fsq_place_id,name,latitude,longitude,location" });
-  if (session) p.set("session_token", session);
-  return `${FSQ_BASE}/places/${encodeURIComponent(fsqPlaceId)}?${p.toString()}`;
-}
-
-export interface Suggestion {
-  fsqPlaceId: string;
+export interface SearchResult {
   name: string;
   formatted: string;
+  payload: PlacePayload;
 }
 
-/** Defensive: the autocomplete result nesting isn't fully public; pull the place id + a label tolerantly. */
-export function mapAutocomplete(json: unknown): Suggestion[] {
+export function mapSearch(json: unknown): SearchResult[] {
   const results = (json as { results?: unknown })?.results;
   if (!Array.isArray(results)) return [];
-  const out: Suggestion[] = [];
-  for (const r of results as Record<string, any>[]) {
-    const place = r?.place ?? r;
-    const id = place?.fsq_place_id ?? place?.fsq_id;
-    if (!id) continue;
-    const name = place?.name ?? r?.text?.primary ?? "";
-    const formatted = r?.text?.secondary ?? place?.location?.formatted_address ?? "";
-    out.push({ fsqPlaceId: String(id), name: String(name), formatted: String(formatted) });
-  }
-  return out;
+  return (results as Record<string, any>[]).map((raw) => {
+    const d = mapDetails(raw);
+    const formatted = String(raw?.location?.formatted_address ?? "");
+    return { name: d.name, formatted, payload: detailsToPayload(d) };
+  });
 }
 
 export interface PlaceDetails {

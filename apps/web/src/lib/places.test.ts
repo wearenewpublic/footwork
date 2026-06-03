@@ -1,29 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { ids } from "@guides/lexicons";
-import { autocompleteUrl, detailsUrl, fsqHeaders, mapAutocomplete, mapDetails, detailsToPayload } from "./places";
+import { searchUrl, fsqHeaders, mapDetails, detailsToPayload, mapSearch } from "./places";
 
-describe("places request builders", () => {
-  it("builds the autocomplete URL with query, types, session, limit", () => {
-    const u = new URL(autocompleteUrl("tartine", "sess123"));
-    expect(u.origin + u.pathname).toBe("https://places-api.foursquare.com/autocomplete");
-    expect(u.searchParams.get("query")).toBe("tartine");
-    expect(u.searchParams.get("types")).toBe("place");
-    expect(u.searchParams.get("session_token")).toBe("sess123");
+describe("searchUrl", () => {
+  it("builds the search URL with query, fields, limit", () => {
+    const u = new URL(searchUrl("blue bottle coffee"));
+    expect(u.origin + u.pathname).toBe("https://places-api.foursquare.com/places/search");
+    expect(u.searchParams.get("query")).toBe("blue bottle coffee");
+    expect(u.searchParams.get("fields")).toBe("fsq_place_id,name,latitude,longitude,location");
     expect(u.searchParams.get("limit")).toBe("8");
+    expect(u.searchParams.get("near")).toBeNull();
   });
-
-  it("builds the details URL with fields", () => {
-    const u = new URL(detailsUrl("abc 123"));
-    expect(u.pathname).toBe("/places/abc%20123");
-    expect(u.searchParams.get("fields")).toBe("fsq_place_id,name,latitude,longitude,location");
+  it("includes near when provided", () => {
+    expect(new URL(searchUrl("coffee", "San Francisco, CA")).searchParams.get("near")).toBe("San Francisco, CA");
   });
+});
 
-  it("includes the session token in the details URL when provided", () => {
-    const u = new URL(detailsUrl("p1", "sess123"));
-    expect(u.searchParams.get("session_token")).toBe("sess123");
-    expect(u.searchParams.get("fields")).toBe("fsq_place_id,name,latitude,longitude,location");
-  });
-
+describe("fsqHeaders", () => {
   it("sets bearer auth + version header", () => {
     expect(fsqHeaders("KEY")).toEqual({
       Authorization: "Bearer KEY",
@@ -33,23 +26,22 @@ describe("places request builders", () => {
   });
 });
 
-describe("mapAutocomplete (defensive: place id + label)", () => {
-  it("extracts place suggestions, skipping non-place results", () => {
+describe("mapSearch", () => {
+  it("maps search results to name + formatted + full payload, reusing the detail mapping", () => {
     const json = { results: [
-      { type: "place", place: { fsq_place_id: "p1", name: "Tartine", location: { address: "600 Guerrero St" } }, text: { primary: "Tartine", secondary: "600 Guerrero St, San Francisco" } },
-      { type: "geo", text: { primary: "San Francisco" } },
+      { fsq_place_id: "p1", name: "Blue Bottle Coffee", latitude: 37.7764, longitude: -122.4232,
+        location: { address: "315 Linden St", locality: "San Francisco", region: "CA", postcode: "94102", country: "US", formatted_address: "315 Linden St, San Francisco, CA 94102" } },
     ] };
-    expect(mapAutocomplete(json)).toEqual([
-      { fsqPlaceId: "p1", name: "Tartine", formatted: "600 Guerrero St, San Francisco" },
+    const out = mapSearch(json);
+    expect(out).toHaveLength(1);
+    expect(out[0].name).toBe("Blue Bottle Coffee");
+    expect(out[0].formatted).toBe("315 Linden St, San Francisco, CA 94102");
+    expect(out[0].payload.location?.map((l) => l.$type)).toEqual([
+      ids.CommunityLexiconLocationGeo, ids.CommunityLexiconLocationAddress, ids.CommunityLexiconLocationFsq,
     ]);
+    expect(out[0].payload.location?.[0]).toEqual({ $type: ids.CommunityLexiconLocationGeo, latitude: "37.7764", longitude: "-122.4232", name: "Blue Bottle Coffee" });
   });
-  it("returns [] for a non-array body", () => {
-    expect(mapAutocomplete({})).toEqual([]);
-  });
-  it("tolerates null/odd elements in results", () => {
-    const json = { results: [null, "weird", { place: { fsq_place_id: "p9", name: "Joe's" }, text: { secondary: "1 Main St" } }] };
-    expect(mapAutocomplete(json)).toEqual([{ fsqPlaceId: "p9", name: "Joe's", formatted: "1 Main St" }]);
-  });
+  it("returns [] for a non-array body", () => { expect(mapSearch({})).toEqual([]); });
 });
 
 describe("mapDetails + detailsToPayload", () => {
