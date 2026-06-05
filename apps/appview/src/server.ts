@@ -12,7 +12,7 @@ const PORT = Number(process.env.PORT ?? 3001);
 const CURSOR = process.env.APPVIEW_CURSOR ? Number(process.env.APPVIEW_CURSOR) : undefined;
 
 const db = openDb(DB_PATH);
-startJetstream(db, CURSOR);
+startJetstream(db, { startCursor: CURSOR });
 
 const api = createApi({
   db,
