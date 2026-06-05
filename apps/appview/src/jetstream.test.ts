@@ -106,6 +106,14 @@ describe("startJetstream reconnect", () => {
     expect(clients).toHaveLength(3);
   });
 
+  it("resumes from the latest cursor on reconnect (in-memory preferred over persisted)", () => {
+    const { clients } = harness("500"); // persisted cursor 500
+    clients[0].cursor = 999; // live events advanced the in-memory cursor
+    clients[0].emit("close");
+    vi.advanceTimersByTime(1000);
+    expect(clients[1].initialCursor).toBe(999);
+  });
+
   it("stops reconnecting after an intentional close()", () => {
     const { clients, ctl } = harness();
     ctl.close();
